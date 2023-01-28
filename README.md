@@ -74,10 +74,10 @@ us as desired.
 
     ```
     $(OUT_DIR)/hello: toolchain \
-    	$(call toolchain,$(USER)," \
+      $(call toolchain,$(USER)," \
         cd $(SRC_DIR)/; \
         gcc hello.c -o $(OUT_DIR)/hello
-    	")
+      ")
     ```
 
 7. Define a release target for your project depending on manifest.txt

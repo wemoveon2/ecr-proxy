@@ -109,8 +109,15 @@ make VERSION=1.0.0rc1 release
 make VERSION=1.0.0rc1 attest
 ```
 
-### Sign an existing release
+### Add and lock a new container dependency
 
 ```
-make VERSION=1.0.0rc1 sign
+echo "vim-nox" >> config/toolchain/packages-base.txt
+make toolchain-update
+```
+
+### Run a shell in the toolchain container
+
+```
+make toolchain-shell
 ```

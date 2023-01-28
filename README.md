@@ -86,7 +86,7 @@ us as desired.
     .PHONY: release
     release: $(OUT_DIR)/hello $(OUT_DIR)/manifest.txt
     	mkdir -p $(RELEASE_DIR)
-    	cp $(OUT_DIR)/my-binary $(RELEASE_DIR)/hello
+    	cp $(OUT_DIR)/hello $(RELEASE_DIR)/hello
     	cp $(OUT_DIR)/release.env $(RELEASE_DIR)/release.env
     	cp $(OUT_DIR)/manifest.txt $(RELEASE_DIR)/manifest.txt
     ```

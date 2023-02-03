@@ -76,6 +76,11 @@ toolchain-update:
 		debian@sha256:$(DEBIAN_HASH) \
 		bash -c /usr/local/bin/packages-update
 
+.PHONY: toolchain-clean
+toolchain-clean:
+	rm -rf cache out
+	docker image rm -f local/$(NAME)-build
+
 .PHONY: attest
 attest:
 	rm -rf $(CACHE_DIR) $(OUT_DIR)

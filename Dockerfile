@@ -1,11 +1,6 @@
 ARG DEBIAN_HASH
 FROM debian@sha256:${DEBIAN_HASH}
 
-ENV DEBIAN_FRONTEND=noninteractive \
-    LANG=C.UTF-8 \
-    TZ=UTC \
-    PATH=/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
-
 ARG CONFIG_DIR
 ADD ${CONFIG_DIR} /config
 

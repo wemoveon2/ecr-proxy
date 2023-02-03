@@ -1,7 +1,8 @@
+DEFAULT_GOAL := $(or $(DEFAULT_GOAL),toolchain)
+ARCH := $(or $(ARCH),x86_64)
+TARGET := $(or $(TARGET),$(ARCH))
 NAME := $(shell basename $(shell git rev-parse --show-toplevel))
 IMAGE := local/$(NAME):latest
-ARCH := x86_64
-TARGET := $(ARCH)
 USER := $(shell id -u):$(shell id -g)
 CPUS := $(shell docker run -it debian nproc)
 GIT_REF := $(shell git log -1 --format=%H config)
@@ -18,9 +19,20 @@ endif
 VERSION := $(shell TZ=UTC0 git show --quiet --date='format-local:%Y%m%dT%H%M%SZ' --format="%cd")
 RELEASE_DIR := release/$(VERSION)
 CONFIG_DIR := config
-CACHE_DIR := cache
+CACHE_DIR_ROOT := cache
+FETCH_DIR := $(CACHE_DIR_ROOT)/fetch
+ifeq ($(TARGET),$(ARCH))
+	CACHE_DIR := $(CACHE_DIR_ROOT)/$(TARGET)
+else
+	CACHE_DIR := $(CACHE_DIR_ROOT)/$(TARGET)/$(ARCH)
+endif
+BIN_DIR := $(CACHE_DIR_ROOT)/bin
 SRC_DIR := src
+KEY_DIR := keys
 OUT_DIR := out
+
+export
+
 docker = docker
 
 include $(CONFIG_DIR)/global.env
@@ -35,7 +47,14 @@ endif
 executables = $(docker) git patch
 
 .PHONY: toolchain
-toolchain: $(CACHE_DIR)/toolchain.tar $(CACHE_DIR)/toolchain.env
+toolchain: \
+	$(CACHE_DIR) \
+	$(FETCH_DIR) \
+	$(RELEASE_DIR) \
+	$(BIN_DIR) \
+	$(OUT_DIR) \
+	$(CACHE_DIR_ROOT)/toolchain.tar \
+	$(CACHE_DIR_ROOT)/toolchain.env
 
 # Launch a shell inside the toolchain container
 .PHONY: toolchain-shell
@@ -66,43 +85,29 @@ attest:
 $(RELEASE_DIR):
 	mkdir -p $@
 
+$(BIN_DIR):
+	mkdir -p $@
+
 $(CACHE_DIR):
+	mkdir -p $@
+
+$(FETCH_DIR):
 	mkdir -p $@
 
 $(OUT_DIR):
 	mkdir -p $@
 
-.ONESHELL:
-$(CACHE_DIR)/toolchain.env: $(CACHE_DIR)
-	cat <<- EOF > $@
-		HOME=/home/build
-		PS1=$(NAME)-toolchain
-		GNUPGHOME=/cache/.gnupg
-		ARCH=$(ARCH)
-		TARGET=$(ARCH)
-		GIT_REF=$(GIT_REF)
-		GIT_AUTHOR=$(GIT_AUTHOR)
-		GIT_KEY=$(GIT_KEY)
-		GIT_DATETIME=$(GIT_DATETIME)
-		GIT_EPOCH=$(GIT_EPOCH)
-		FAKETIME_FMT="%s"
-		FAKETIME="1"
-		SOURCE_DATE_EPOCH=1
-		KBUILD_BUILD_TIMESTAMP="1970-01-01 00:00:00 UTC"
-		KCONFIG_NOTIMESTAMP=1
-		KBUILD_BUILD_USER=root
-		KBUILD_BUILD_HOST=$(NAME)
-		KBUILD_BUILD_VERSION=1
-		UID=$(shell id -u)
-		GID=$(shell id -g)
-		RELEASE_DIR=release/$(VERSION)
-		CONFIG_DIR=/home/build/$(CONFIG_DIR)
-		CACHE_DIR=/home/build/$(CACHE_DIR)
-		SRC_DIR=/home/build/$(SRC_DIR)
-		OUT_DIR=/home/build/$(OUT_DIR)
-	EOF
+$(CACHE_DIR_ROOT)/toolchain.env: \
+	$(CACHE_DIR) \
+	$(SRC_DIR)/toolchain/scripts/environment
+	$(SRC_DIR)/toolchain/scripts/environment > $@
 
-$(CACHE_DIR)/toolchain.tar:
+$(CACHE_DIR_ROOT)/toolchain.tar: \
+	$(SRC_DIR)/toolchain/Dockerfile \
+	$(CONFIG_DIR)/toolchain/package-hashes-$(ARCH).txt \
+	$(CONFIG_DIR)/toolchain/packages-base.list \
+	$(CONFIG_DIR)/toolchain/packages-$(ARCH).list \
+	$(CONFIG_DIR)/toolchain/sources.list
 	mkdir -p $(CACHE_DIR)
 	DOCKER_BUILDKIT=1 \
 	docker build \
@@ -145,9 +150,9 @@ check_executables := $(foreach exec,$(executables),\$(if \
 	$(shell which $(exec)),some string,$(error "No $(exec) in PATH")))
 
 define git_clone
-	[ -d $(CACHE_DIR)/$(1) ] || git clone $(2) $(CACHE_DIR)/$(1)
-	git -C $(CACHE_DIR)/$(1) checkout $(3)
-	git -C $(CACHE_DIR)/$(1) rev-parse --verify HEAD | grep -q $(3) || { \
+	[ -d $(1) ] || git clone $(2) $(1)
+	git -C $(1) checkout $(3)
+	git -C $(1) rev-parse --verify HEAD | grep -q $(3) || { \
 		echo 'Error: Git ref/branch collision.'; exit 1; \
 	};
 endef
@@ -161,8 +166,29 @@ define apply_patches
 	")
 endef
 
+define fetch_pgp_key
+        mkdir -p $(KEY_DIR) && \
+        $(call toolchain,$(USER), " \
+                for server in \
+            ha.pool.sks-keyservers.net \
+            hkp://keyserver.ubuntu.com:80 \
+            hkp://p80.pool.sks-keyservers.net:80 \
+            pgp.mit.edu \
+        ; do \
+                        echo "Trying: $${server}"; \
+                gpg \
+                        --recv-key \
+                        --keyserver "$${server}" \
+                        --keyserver-options timeout=10 \
+                        --recv-keys "$(1)" \
+                && break; \
+        done; \
+                gpg --export -a $(1) > $(KEY_DIR)/$(1).asc; \
+        ")
+endef
+
 define toolchain
-	docker load -i $(CACHE_DIR)/toolchain.tar
+	docker load -i $(CACHE_DIR_ROOT)/toolchain.tar
 	docker run \
 		--rm \
 		--tty \
@@ -173,7 +199,7 @@ define toolchain
 		--volume $(PWD):/home/build \
 		--workdir /home/build \
 		--env-file=$(CONFIG_DIR)/global.env \
-		--env-file=$(CACHE_DIR)/toolchain.env \
+		--env-file=$(CACHE_DIR_ROOT)/toolchain.env \
 		$(IMAGE) \
 		bash -c $(2)
 endef

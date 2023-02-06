@@ -1,6 +1,7 @@
 DEFAULT_GOAL := $(or $(DEFAULT_GOAL),toolchain)
 ARCH := $(or $(ARCH),x86_64)
 TARGET := $(or $(TARGET),$(ARCH))
+PLATFORM := $(or $(PLATFORM),linux)
 NAME := $(shell basename $(shell git rev-parse --show-toplevel))
 IMAGE := local/$(NAME):latest
 USER := $(shell id -u):$(shell id -g)

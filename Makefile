@@ -18,7 +18,7 @@ else
 	GIT_STATE=dirty
 endif
 VERSION := $(shell TZ=UTC0 git show --quiet --date='format-local:%Y%m%dT%H%M%SZ' --format="%cd")
-RELEASE_DIR := release/$(VERSION)
+DIST_DIR := dist
 CONFIG_DIR := config
 CACHE_DIR_ROOT := cache
 FETCH_DIR := $(CACHE_DIR_ROOT)/fetch
@@ -40,8 +40,8 @@ include $(CONFIG_DIR)/global.env
 export $(shell sed 's/=.*//' $(CONFIG_DIR)/global.env)
 
 ## Use env vars from existing release if present
-ifneq (,$(wildcard $(RELEASE_DIR)/release.env))
-    include $(RELEASE_DIR)/release.env
+ifneq (,$(wildcard $(DIST_DIR)/release.env))
+    include $(DIST_DIR)/release.env
     export
 endif
 
@@ -51,7 +51,7 @@ executables = $(docker) git patch
 toolchain: \
 	$(CACHE_DIR) \
 	$(FETCH_DIR) \
-	$(RELEASE_DIR) \
+	$(DIST_DIR) \
 	$(BIN_DIR) \
 	$(OUT_DIR) \
 	$(CACHE_DIR_ROOT)/toolchain.tar \
@@ -86,9 +86,9 @@ toolchain-clean:
 attest:
 	rm -rf $(CACHE_DIR) $(OUT_DIR)
 	$(MAKE) TARGET=$(TARGET) VERSION=$(VERSION)
-	diff -q $(OUT_DIR)/manifest.txt release/$(VERSION)/manifest.txt;
+	diff -q $(OUT_DIR)/manifest.txt $(DIST_DIR)/manifest.txt;
 
-$(RELEASE_DIR):
+$(DIST_DIR):
 	mkdir -p $@
 
 $(BIN_DIR):
@@ -126,15 +126,15 @@ $(CACHE_DIR_ROOT)/toolchain.tar: \
 		.
 	docker save "$(IMAGE)" -o "$@"
 
-$(RELEASE_DIR)/release.env: \
-	$(RELEASE_DIR) \
+$(DIST_DIR)/release.env: \
+	$(DIST_DIR) \
 	$(OUT_DIR)/release.env
-	cp $(OUT_DIR)/release.env $(RELEASE_DIR)/release.env
+	cp $(OUT_DIR)/release.env $(DIST_DIR)/release.env
 
-$(RELEASE_DIR)/manifest.txt: \
-	$(RELEASE_DIR) \
+$(DIST_DIR)/manifest.txt: \
+	$(DIST_DIR) \
 	$(OUT_DIR)/manifest.txt
-	cp $(OUT_DIR)/manifest.txt $(RELEASE_DIR)/manifest.txt
+	cp $(OUT_DIR)/manifest.txt $(DIST_DIR)/manifest.txt
 
 $(OUT_DIR)/release.env: | $(OUT_DIR)
 	echo 'VERSION=$(VERSION)'            > $(OUT_DIR)/release.env

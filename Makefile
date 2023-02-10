@@ -85,6 +85,8 @@ toolchain-clean:
 .PHONY: attest
 attest:
 	rm -rf $(CACHE_DIR) $(OUT_DIR)
+	mkdir -p $(OUT_DIR)
+	cp $(DIST_DIR)/release.env $(OUT_DIR)/release.env
 	$(MAKE) TARGET=$(TARGET) VERSION=$(VERSION)
 	diff -q $(OUT_DIR)/manifest.txt $(DIST_DIR)/manifest.txt;
 

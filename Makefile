@@ -17,7 +17,7 @@ ifeq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 else
 	GIT_STATE=dirty
 endif
-VERSION := $(shell TZ=UTC0 git show --quiet --date='format-local:%Y%m%dT%H%M%SZ' --format="%cd")
+VERSION := $(shell TZ=UTC0 git show --quiet --date='format-local:%Y.%m.%d' --format="%cd")
 DIST_DIR := dist
 CONFIG_DIR := config
 CACHE_DIR_ROOT := cache

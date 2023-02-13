@@ -79,12 +79,11 @@ toolchain-update:
 
 .PHONY: toolchain-clean
 toolchain-clean:
-	rm -rf cache out
-	docker image rm -f local/$(NAME)-build
+	rm -rf $(CACHE_DIR_ROOT) $(OUT_DIR)
+	docker image rm -f $(IMAGE)
 
 .PHONY: attest
-attest:
-	rm -rf $(CACHE_DIR) $(OUT_DIR)
+attest: toolchain-clean
 	mkdir -p $(OUT_DIR)
 	cp $(DIST_DIR)/release.env $(OUT_DIR)/release.env
 	$(MAKE) TARGET=$(TARGET) VERSION=$(VERSION)

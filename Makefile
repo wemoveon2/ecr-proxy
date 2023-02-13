@@ -9,9 +9,7 @@ CPUS := $(shell docker run -it debian nproc)
 GIT_REF := $(shell git log -1 --format=%H)
 GIT_AUTHOR := $(shell git log -1 --format=%an)
 GIT_KEY := $(shell git log -1 --format=%GP)
-GIT_EPOCH := $(shell git log -1 --format=%at)
-GIT_DATETIME := \
-	$(shell git log -1 --format=%cd --date=format:'%Y-%m-%d %H:%M:%S' config)
+GIT_TIMESTAMP := $(shell git log -1 --format=%cd --date=iso)
 ifeq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	GIT_STATE=clean
 else
@@ -138,11 +136,11 @@ $(DIST_DIR)/manifest.txt: \
 	cp $(OUT_DIR)/manifest.txt $(DIST_DIR)/manifest.txt
 
 $(OUT_DIR)/release.env: | $(OUT_DIR)
-	echo 'VERSION=$(VERSION)'            > $(OUT_DIR)/release.env
-	echo 'GIT_REF=$(GIT_REF)'           >> $(OUT_DIR)/release.env
-	echo 'GIT_AUTHOR=$(GIT_AUTHOR)'     >> $(OUT_DIR)/release.env
-	echo 'GIT_KEY=$(GIT_KEY)'           >> $(OUT_DIR)/release.env
-	echo 'GIT_DATETIME=$(GIT_DATETIME)' >> $(OUT_DIR)/release.env
+	echo 'VERSION=$(VERSION)'              > $(OUT_DIR)/release.env
+	echo 'GIT_REF=$(GIT_REF)'             >> $(OUT_DIR)/release.env
+	echo 'GIT_AUTHOR=$(GIT_AUTHOR)'       >> $(OUT_DIR)/release.env
+	echo 'GIT_KEY=$(GIT_KEY)'             >> $(OUT_DIR)/release.env
+	echo 'GIT_TIMESTAMP=$(GIT_TIMESTAMP)' >> $(OUT_DIR)/release.env
 
 $(OUT_DIR)/manifest.txt: | $(OUT_DIR)
 	find $(OUT_DIR) \

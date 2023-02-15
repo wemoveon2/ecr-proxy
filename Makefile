@@ -3,7 +3,7 @@ ARCH := $(or $(ARCH),x86_64)
 TARGET := $(or $(TARGET),$(ARCH))
 PLATFORM := $(or $(PLATFORM),linux)
 NAME := $(shell basename $(shell git rev-parse --show-toplevel | tr A-Z a-z ))
-IMAGE := local/$(NAME):latest
+IMAGE := local/$(NAME)
 USER := $(shell id -u):$(shell id -g)
 CPUS := $(shell docker run -it debian nproc)
 GIT_REF := $(shell git log -1 --format=%H)
@@ -53,6 +53,7 @@ toolchain: \
 	$(BIN_DIR) \
 	$(OUT_DIR) \
 	$(CACHE_DIR_ROOT)/toolchain.tar \
+	$(CACHE_DIR_ROOT)/toolchain.state \
 	$(CACHE_DIR_ROOT)/toolchain.env
 
 # Launch a shell inside the toolchain container
@@ -125,6 +126,11 @@ $(CACHE_DIR_ROOT)/toolchain.tar: \
 		.
 	docker save "$(IMAGE)" -o "$@"
 
+$(CACHE_DIR_ROOT)/toolchain.state: \
+	$(CACHE_DIR_ROOT)/toolchain.tar
+	docker load -i $(CACHE_DIR_ROOT)/toolchain.tar
+	docker images --no-trunc --quiet $(IMAGE) > $@
+
 $(DIST_DIR)/release.env: \
 	$(DIST_DIR) \
 	$(OUT_DIR)/release.env
@@ -193,7 +199,6 @@ define fetch_pgp_key
 endef
 
 define toolchain
-	docker load -i $(CACHE_DIR_ROOT)/toolchain.tar
 	docker run \
 		--rm \
 		--tty \
@@ -205,6 +210,6 @@ define toolchain
 		--workdir /home/build \
 		--env-file=$(CONFIG_DIR)/global.env \
 		--env-file=$(CACHE_DIR_ROOT)/toolchain.env \
-		$(IMAGE) \
+		$(shell cat cache/toolchain.state) \
 		bash -c $(2)
 endef

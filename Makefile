@@ -161,11 +161,17 @@ check_executables := $(foreach exec,$(executables),\$(if \
 	$(shell which $(exec)),some string,$(error "No $(exec) in PATH")))
 
 define git_clone
-	[ -d $(1) ] || git clone $(2) $(1)
-	git -C $(1) checkout $(3)
-	git -C $(1) rev-parse --verify HEAD | grep -q $(3) || { \
-		echo 'Error: Git ref/branch collision.'; exit 1; \
-	};
+	[ -d $(1) ] || \
+		mkdir -p $(FETCH_DIR) && \
+		mkdir $(1).tmp && \
+		git -C $(1).tmp init && \
+		git -C $(1).tmp remote add origin $(2) && \
+		git -C $(1).tmp fetch origin $(3) && \
+		git -C $(1).tmp -c advice.detachedHead=false checkout $(3) && \
+		git -C $(1).tmp rev-parse --verify HEAD | grep -q $(3) || { \
+			echo 'Error: Git ref/branch collision.'; exit 1; \
+		} && \
+		mv $(1).tmp $(1);
 endef
 
 define apply_patches

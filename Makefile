@@ -153,7 +153,7 @@ $(OUT_DIR)/manifest.txt: | $(OUT_DIR)
 		-type f \
 		-not -path "$(OUT_DIR)/manifest.txt" \
 		-exec openssl sha256 -r {} \; \
-	| sed -e 's/ \*/ /g' -e 's/ \.\// /g' \
+	| sed -e 's/ \*out\// /g' -e 's/ \.\// /g' \
 	| LC_ALL=C sort -k2 \
 	> $@
 

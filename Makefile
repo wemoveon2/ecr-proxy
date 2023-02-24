@@ -52,7 +52,6 @@ toolchain: \
 	$(DIST_DIR) \
 	$(BIN_DIR) \
 	$(OUT_DIR) \
-	$(CACHE_DIR_ROOT)/toolchain.tar \
 	$(CACHE_DIR_ROOT)/toolchain.state \
 	$(CACHE_DIR_ROOT)/toolchain.env
 

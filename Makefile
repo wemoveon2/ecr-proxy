@@ -148,7 +148,7 @@ $(OUT_DIR)/release.env: | $(OUT_DIR)
 	echo 'GIT_TIMESTAMP=$(GIT_TIMESTAMP)' >> $(OUT_DIR)/release.env
 
 $(OUT_DIR)/manifest.txt: | $(OUT_DIR)
-	find $(OUT_DIR) \
+	find -L $(OUT_DIR) \
 		-type f \
 		-not -path "$(OUT_DIR)/manifest.txt" \
 		-exec openssl sha256 -r {} \; \

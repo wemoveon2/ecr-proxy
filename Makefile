@@ -51,7 +51,6 @@ toolchain: \
 	$(FETCH_DIR) \
 	$(BIN_DIR) \
 	$(OUT_DIR) \
-	$(CACHE_DIR_ROOT)/toolchain.tar \
 	$(CACHE_DIR_ROOT)/toolchain.state \
 	$(CACHE_DIR_ROOT)/toolchain.env
 
@@ -140,11 +139,11 @@ $(OUT_DIR)/release.env: | $(OUT_DIR)
 	echo 'GIT_TIMESTAMP=$(GIT_TIMESTAMP)' >> $(OUT_DIR)/release.env
 
 $(OUT_DIR)/manifest.txt: | $(OUT_DIR)
-	find $(OUT_DIR) \
+	find -L $(OUT_DIR) \
 		-type f \
 		-not -path "$(OUT_DIR)/manifest.txt" \
 		-exec openssl sha256 -r {} \; \
-	| sed -e 's/ \*/ /g' -e 's/ \.\// /g' \
+	| sed -e 's/ \*out\// /g' -e 's/ \.\// /g' \
 	| LC_ALL=C sort -k2 \
 	> $@
 

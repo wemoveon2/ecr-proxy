@@ -49,7 +49,6 @@ executables = $(docker) git patch
 toolchain: \
 	$(CACHE_DIR) \
 	$(FETCH_DIR) \
-	$(DIST_DIR) \
 	$(BIN_DIR) \
 	$(OUT_DIR) \
 	$(CACHE_DIR_ROOT)/toolchain.tar \
@@ -88,8 +87,10 @@ attest: toolchain-clean
 	$(MAKE) TARGET=$(TARGET) VERSION=$(VERSION)
 	diff -q $(OUT_DIR)/manifest.txt $(DIST_DIR)/manifest.txt;
 
-$(DIST_DIR):
+$(DIST_DIR): default
 	mkdir -p $@
+	rm -rf $@/*
+	cp -R $(OUT_DIR)/* $@/
 
 $(BIN_DIR):
 	mkdir -p $@
@@ -130,16 +131,6 @@ $(CACHE_DIR_ROOT)/toolchain.state: \
 	$(CACHE_DIR_ROOT)/toolchain.tar
 	docker load -i $(CACHE_DIR_ROOT)/toolchain.tar
 	docker images --no-trunc --quiet $(IMAGE) > $@
-
-$(DIST_DIR)/release.env: \
-	$(DIST_DIR) \
-	$(OUT_DIR)/release.env
-	cp $(OUT_DIR)/release.env $(DIST_DIR)/release.env
-
-$(DIST_DIR)/manifest.txt: \
-	$(DIST_DIR) \
-	$(OUT_DIR)/manifest.txt
-	cp $(OUT_DIR)/manifest.txt $(DIST_DIR)/manifest.txt
 
 $(OUT_DIR)/release.env: | $(OUT_DIR)
 	echo 'VERSION=$(VERSION)'              > $(OUT_DIR)/release.env

@@ -86,9 +86,10 @@ attest: toolchain-clean
 	$(MAKE) TARGET=$(TARGET) VERSION=$(VERSION)
 	diff -q $(OUT_DIR)/manifest.txt $(DIST_DIR)/manifest.txt;
 
-$(DIST_DIR): default
-	mkdir -p $@
+.PHONY: $(DIST_DIR)
+$(DIST_DIR):
 	rm -rf $@/*
+	$(MAKE) toolchain-clean default
 	cp -R $(OUT_DIR)/* $@/
 
 $(BIN_DIR):
@@ -138,7 +139,7 @@ $(OUT_DIR)/release.env: | $(OUT_DIR)
 	echo 'GIT_KEY=$(GIT_KEY)'             >> $(OUT_DIR)/release.env
 	echo 'GIT_TIMESTAMP=$(GIT_TIMESTAMP)' >> $(OUT_DIR)/release.env
 
-$(OUT_DIR)/manifest.txt: | $(OUT_DIR)
+$(OUT_DIR)/manifest.txt: $(wildcard $(OUT_DIR)/*)
 	find -L $(OUT_DIR) \
 		-type f \
 		-not -path "$(OUT_DIR)/manifest.txt" \

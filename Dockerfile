@@ -8,6 +8,3 @@ ARG SCRIPTS_DIR
 ADD ${SCRIPTS_DIR} /usr/local/bin
 
 RUN packages-install
-
-RUN echo "/usr/lib/x86_64-linux-gnu/faketime/libfaketime.so.1" \
-    > /etc/ld.so.preload

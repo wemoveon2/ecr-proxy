@@ -4,12 +4,15 @@ TARGET := $(or $(TARGET),$(ARCH))
 PLATFORM := $(or $(PLATFORM),linux)
 NAME := $(shell basename $(shell git rev-parse --show-toplevel | tr A-Z a-z ))
 IMAGE := local/$(NAME)
-USER := $(shell id -u):$(shell id -g)
+UID := $(shell id -u)
+GID := $(shell id -g)
+USER := $(UID):$(GID)
 CPUS := $(shell docker run -it debian nproc)
 GIT_REF := $(shell git log -1 --format=%H)
 GIT_AUTHOR := $(shell git log -1 --format=%an)
 GIT_KEY := $(shell git log -1 --format=%GP)
 GIT_TIMESTAMP := $(shell git log -1 --format=%cd --date=iso)
+, := ,
 ifeq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	GIT_STATE=clean
 else
@@ -57,22 +60,24 @@ toolchain: \
 # Launch a shell inside the toolchain container
 .PHONY: toolchain-shell
 toolchain-shell: toolchain
-	$(call toolchain,$(USER),"bash --norc")
+	$(call toolchain,bash --norc)
 
 # Pin all packages in toolchain container to latest versions
 .PHONY: toolchain-update
 toolchain-update:
 	docker run \
 		--rm \
-		--env LOCAL_USER=$(USER) \
+		--tty \
+		--interactive \
 		--platform=linux/$(ARCH) \
+		--env LOCAL_USER=$(UID):$(GID) \
 		--volume $(PWD)/$(CONFIG_DIR):/config \
 		--volume $(PWD)/$(SRC_DIR)/toolchain/scripts:/usr/local/bin \
-		--env ARCH=$(ARCH) \
-		--interactive \
-		--tty \
+		--cpus $(CPUS) \
+		--volume $(PWD):/home/build \
+		--workdir /home/build \
 		debian@sha256:$(DEBIAN_HASH) \
-		bash -c /usr/local/bin/packages-update
+		/usr/local/bin/packages-update
 
 .PHONY: toolchain-clean
 toolchain-clean:
@@ -166,7 +171,7 @@ define git_clone
 endef
 
 define apply_patches
-	[ -d $(2) ] && $(call toolchain,$(USER)," \
+	[ -d $(2) ] && $(call toolchain," \
 		cd $(1); \
 		git restore .; \
 		find /$(2) -type f -iname '*.patch' -print0 \
@@ -176,7 +181,7 @@ endef
 
 define fetch_pgp_key
         mkdir -p $(KEY_DIR) && \
-        $(call toolchain,$(USER), " \
+        $(call toolchain," \
                 for server in \
             ha.pool.sks-keyservers.net \
             hkp://keyserver.ubuntu.com:80 \
@@ -200,13 +205,15 @@ define toolchain
 		--rm \
 		--tty \
 		--interactive \
-		--user=$(1) \
+		--env UID=$(UID) \
+		--env GID=$(GID) \
 		--platform=linux/$(ARCH) \
+		--privileged \
 		--cpus $(CPUS) \
 		--volume $(PWD):/home/build \
 		--workdir /home/build \
 		--env-file=$(CONFIG_DIR)/global.env \
 		--env-file=$(CACHE_DIR_ROOT)/toolchain.env \
 		$(shell cat cache/toolchain.state) \
-		bash -c $(2)
+		$(SRC_DIR)/toolchain/scripts/host-env bash -c $(1)
 endef

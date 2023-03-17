@@ -181,23 +181,23 @@ endef
 
 define fetch_pgp_key
         mkdir -p $(KEY_DIR) && \
-        $(call toolchain," \
-                for server in \
-            ha.pool.sks-keyservers.net \
-            hkp://keyserver.ubuntu.com:80 \
-            hkp://p80.pool.sks-keyservers.net:80 \
-            pgp.mit.edu \
-        ; do \
-                        echo "Trying: $${server}"; \
-                gpg \
-                        --recv-key \
-                        --keyserver "$${server}" \
-                        --keyserver-options timeout=10 \
-                        --recv-keys "$(1)" \
-                && break; \
-        done; \
-                gpg --export -a $(1) > $(KEY_DIR)/$(1).asc; \
-        ")
+        $(call toolchain,' \
+			for server in \
+        	    keys.openpgp.org \
+        	    hkp://keyserver.ubuntu.com:80 \
+        	    hkp://p80.pool.sks-keyservers.net:80 \
+        	    ha.pool.sks-keyservers.net \
+        	    pgp.mit.edu \
+        	; do \
+        	                echo "Trying: $${server}"; \
+        	        gpg \
+        	                --keyserver "$${server}" \
+        	                --keyserver-options timeout=10 \
+        	                --recv-keys "$(1)" \
+        	        && break; \
+        	done; \
+            gpg --export -a $(1) > $(KEY_DIR)/$(1).asc; \
+        ')
 endef
 
 define toolchain

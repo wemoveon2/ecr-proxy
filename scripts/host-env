@@ -6,6 +6,7 @@ gid=${GID?}
 user=${USER:-"build"}
 export HOME="/home/${user}"
 
+groupdel dialout
 groupadd -g "$gid" "${user}"
 useradd \
 	-g "$gid" \

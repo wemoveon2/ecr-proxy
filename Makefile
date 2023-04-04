@@ -221,6 +221,6 @@ define toolchain
 		--workdir /home/build \
 		--env-file=$(CONFIG_DIR)/global.env \
 		--env-file=$(CACHE_DIR_ROOT)/toolchain.env \
-		$(shell cat cache/toolchain.state) \
+		$(shell cat cache/toolchain.state 2> /dev/null) \
 		$(SRC_DIR)/toolchain/scripts/host-env bash -c $(1)
 endef

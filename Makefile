@@ -87,6 +87,7 @@ toolchain-update:
 
 .PHONY: toolchain-clean
 toolchain-clean:
+	chmod -R u+w $(CACHE_DIR_ROOT)
 	rm -rf $(CACHE_DIR_ROOT) $(OUT_DIR)
 	docker image rm -f $(IMAGE)
 

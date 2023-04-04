@@ -1,6 +1,12 @@
+lc = $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,$(subst F,f,$(subst G,g,$(subst H,h,$(subst I,i,$(subst J,j,$(subst K,k,$(subst L,l,$(subst M,m,$(subst N,n,$(subst O,o,$(subst P,p,$(subst Q,q,$(subst R,r,$(subst S,s,$(subst T,t,$(subst U,u,$(subst V,v,$(subst W,w,$(subst X,x,$(subst Y,y,$(subst Z,z,$1))))))))))))))))))))))))))
+altarch = $(subst x86_64,amd64,$(subst aarch64,arm64,$1))
+
 DEFAULT_GOAL := $(or $(DEFAULT_GOAL),toolchain)
 ARCH := $(or $(ARCH),x86_64)
 TARGET := $(or $(TARGET),$(ARCH))
+HOST_ARCH := $(call lc,$(shell uname -m))
+HOST_ARCH_ALT := $(call altarch,$(HOST_ARCH))
+HOST_OS := $(call lc,$(shell uname -s))
 PLATFORM := $(or $(PLATFORM),linux)
 NAME := $(shell basename $(shell git rev-parse --show-toplevel | tr A-Z a-z ))
 IMAGE := local/$(NAME)

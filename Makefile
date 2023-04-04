@@ -90,8 +90,8 @@ toolchain-clean:
 	rm -rf $(CACHE_DIR_ROOT) $(OUT_DIR)
 	docker image rm -f $(IMAGE)
 
-.PHONY: attest
-attest: toolchain-clean
+.PHONY: reproduce
+reproduce: toolchain-clean
 	mkdir -p $(OUT_DIR)
 	cp $(DIST_DIR)/release.env $(OUT_DIR)/release.env
 	$(MAKE) TARGET=$(TARGET) VERSION=$(VERSION)

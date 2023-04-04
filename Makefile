@@ -96,7 +96,8 @@ reproduce: toolchain-clean
 	mkdir -p $(OUT_DIR)
 	cp $(DIST_DIR)/release.env $(OUT_DIR)/release.env
 	$(MAKE) TARGET=$(TARGET) VERSION=$(VERSION)
-	diff -q $(OUT_DIR)/manifest.txt $(DIST_DIR)/manifest.txt;
+	diff -q $(OUT_DIR)/manifest.txt $(DIST_DIR)/manifest.txt \
+	&& echo "Success: $(OUT_DIR) and $(DIST_DIR) are identical"
 
 .PHONY: $(DIST_DIR)
 $(DIST_DIR):

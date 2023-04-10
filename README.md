@@ -43,7 +43,7 @@ us as desired.
 1. Clone toolchain as a git submodule somewhere in your project
 
     ```
-    git submodule add https://codeburg.org/distrust/toolchain src/toolchain
+    git submodule add https://codeberg.org/distrust/toolchain src/toolchain
     ```
 
 2. Include toolchain Makefile in your root Makefile

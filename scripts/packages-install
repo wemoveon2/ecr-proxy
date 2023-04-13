@@ -32,3 +32,5 @@ apt-get install \
     --allow-downgrades \
     -y $(cat /etc/apt/packages-${ARCH}.list)
 rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/* /tmp/* /var/tmp/*;
+
+echo "%sudo ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers

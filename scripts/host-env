@@ -10,6 +10,7 @@ groupdel dialout
 groupadd -g "$gid" "${user}"
 useradd \
 	-g "$gid" \
+	-G sudo \
 	-u "$uid" \
 	-d "/home/${user}" \
 	-s /bin/bash \

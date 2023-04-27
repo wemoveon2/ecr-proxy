@@ -66,7 +66,7 @@ toolchain: \
 # Launch a shell inside the toolchain container
 .PHONY: toolchain-shell
 toolchain-shell: toolchain
-	$(call toolchain,bash --norc)
+	$(call toolchain,bash --norc,--interactive)
 
 # Pin all packages in toolchain container to latest versions
 .PHONY: toolchain-update
@@ -74,7 +74,6 @@ toolchain-update:
 	docker run \
 		--rm \
 		--tty \
-		--interactive \
 		--platform=linux/$(ARCH) \
 		--env LOCAL_USER=$(UID):$(GID) \
 		--volume $(PWD)/$(CONFIG_DIR):/config \
@@ -87,9 +86,14 @@ toolchain-update:
 
 .PHONY: toolchain-clean
 toolchain-clean:
-	chmod -R u+w $(CACHE_DIR_ROOT)
-	rm -rf $(CACHE_DIR_ROOT) $(OUT_DIR)
-	docker image rm -f $(IMAGE)
+	if [ -d "$(CACHE_DIR_ROOT)" ]; then \
+		chmod -R u+w $(CACHE_DIR_ROOT); \
+		rm -rf $(CACHE_DIR_ROOT); \
+	fi
+	if [ -d "$(OUT_DIR)" ]; then \
+		rm -rf $(OUT_DIR); \
+	fi
+	docker image rm -f $(IMAGE) || :
 
 .PHONY: reproduce
 reproduce: toolchain-clean
@@ -212,7 +216,7 @@ define toolchain
 	docker run \
 		--rm \
 		--tty \
-		--interactive \
+		$(2) \
 		--env UID=$(UID) \
 		--env GID=$(GID) \
 		--platform=linux/$(ARCH) \

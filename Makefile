@@ -14,6 +14,7 @@ UID := $(shell id -u)
 GID := $(shell id -g)
 USER := $(UID):$(GID)
 CPUS := $(shell docker run -it debian nproc)
+PRESERVE_CACHE := "false"
 GIT_REF := $(shell git log -1 --format=%H)
 GIT_AUTHOR := $(shell git log -1 --format=%an)
 GIT_KEY := $(shell git log -1 --format=%GP)
@@ -106,7 +107,8 @@ reproduce: toolchain-clean
 .PHONY: $(DIST_DIR)
 $(DIST_DIR):
 	rm -rf $@/*
-	$(MAKE) toolchain-clean default
+	[ "$(PRESERVE_CACHE)" = "true" ] || $(MAKE) toolchain-clean
+	$(MAKE) default
 	cp -R $(OUT_DIR)/* $@/
 
 $(BIN_DIR):

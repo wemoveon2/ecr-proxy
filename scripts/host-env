@@ -6,15 +6,23 @@ gid=${GID?}
 user=${USER:-"build"}
 export HOME="/home/${user}"
 
-groupdel dialout
-groupadd -g "$gid" "${user}"
-useradd \
-	-g "$gid" \
-	-G sudo \
-	-u "$uid" \
-	-d "/home/${user}" \
-	-s /bin/bash \
-	"${user}"
+# If running user is not root, make a custom user/group
+[ "$uid" != "0" ] && {
+    getent group "$gid" && groupdel "$gid"
+    getent passwd "$uid" && userdel "$uid"
+    groupadd -g "$gid" "${user}"
+    useradd \
+    	-g "$gid" \
+    	-G sudo \
+    	-u "$uid" \
+    	-d "/home/${user}" \
+    	-s /bin/bash \
+    	"${user}"
+}
 
 cd "$HOME"
-setpriv --reuid="$uid" --regid="$gid" --init-groups "$@"
+
+# If running user is not root, pivot to running user
+[ "$uid" != "0" ] && {
+    setpriv --reuid="$uid" --regid="$gid" --init-groups "$@"
+}

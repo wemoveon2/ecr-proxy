@@ -53,7 +53,7 @@ ifneq (,$(wildcard $(DIST_DIR)/release.env))
     export
 endif
 
-executables = $(docker) git patch
+executables = $(docker) git git-lfs patch
 
 .PHONY: toolchain
 toolchain: \

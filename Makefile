@@ -13,7 +13,7 @@ IMAGE := local/$(NAME)
 UID := $(shell id -u)
 GID := $(shell id -g)
 USER := $(UID):$(GID)
-CPUS := $(shell docker run -it debian nproc)
+CPUS := $(shell docker run debian nproc)
 PRESERVE_CACHE := "false"
 GIT_REF := $(shell git log -1 --format=%H)
 GIT_AUTHOR := $(shell git log -1 --format=%an)
@@ -214,20 +214,23 @@ define fetch_pgp_key
         ')
 endef
 
+TOOLCHAIN_VOLUME := $(PWD):/home/build
+TOOLCHAIN_WORKDIR := /home/build
 define toolchain
-	docker run \
-		--rm \
-		--tty \
-		$(2) \
-		--env UID=$(UID) \
-		--env GID=$(GID) \
-		--platform=linux/$(ARCH) \
-		--privileged \
-		--cpus $(CPUS) \
-		--volume $(PWD):/home/build \
-		--workdir /home/build \
-		--env-file=$(CONFIG_DIR)/global.env \
-		--env-file=$(CACHE_DIR_ROOT)/toolchain.env \
-		$(shell cat cache/toolchain.state 2> /dev/null) \
-		$(SRC_DIR)/toolchain/scripts/host-env bash -c $(1)
+        docker run \
+                --rm \
+				--tty \
+                $(2) \
+                --env UID=$(UID) \
+                --env GID=$(GID) \
+                --platform=linux/$(ARCH) \
+                --privileged \
+                --cpus $(CPUS) \
+                --volume $(TOOLCHAIN_VOLUME) \
+                --workdir $(TOOLCHAIN_WORKDIR) \
+                --env-file=$(CONFIG_DIR)/global.env \
+                --env-file=$(CACHE_DIR_ROOT)/toolchain.env \
+                $(shell cat cache/toolchain.state 2> /dev/null) \
+                $(SRC_DIR)/toolchain/scripts/host-env bash -c $(1)
 endef
+

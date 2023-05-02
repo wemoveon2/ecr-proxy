@@ -1,6 +1,9 @@
 lc = $(subst A,a,$(subst B,b,$(subst C,c,$(subst D,d,$(subst E,e,$(subst F,f,$(subst G,g,$(subst H,h,$(subst I,i,$(subst J,j,$(subst K,k,$(subst L,l,$(subst M,m,$(subst N,n,$(subst O,o,$(subst P,p,$(subst Q,q,$(subst R,r,$(subst S,s,$(subst T,t,$(subst U,u,$(subst V,v,$(subst W,w,$(subst X,x,$(subst Y,y,$(subst Z,z,$1))))))))))))))))))))))))))
 altarch = $(subst x86_64,amd64,$(subst aarch64,arm64,$1))
 
+TOOLCHAIN_VOLUME := $(PWD):/home/build
+TOOLCHAIN_WORKDIR := /home/build
+
 DEFAULT_GOAL := $(or $(DEFAULT_GOAL),toolchain)
 ARCH := $(or $(ARCH),x86_64)
 TARGET := $(or $(TARGET),$(ARCH))
@@ -80,8 +83,8 @@ toolchain-update:
 		--volume $(PWD)/$(CONFIG_DIR):/config \
 		--volume $(PWD)/$(SRC_DIR)/toolchain/scripts:/usr/local/bin \
 		--cpus $(CPUS) \
-		--volume $(PWD):/home/build \
-		--workdir /home/build \
+		--volume $(TOOLCHAIN_VOLUME) \
+		--workdir $(TOOLCHAIN_WORKDIR) \
 		debian@sha256:$(DEBIAN_HASH) \
 		/usr/local/bin/packages-update
 
@@ -214,8 +217,6 @@ define fetch_pgp_key
         ')
 endef
 
-TOOLCHAIN_VOLUME := $(PWD):/home/build
-TOOLCHAIN_WORKDIR := /home/build
 define toolchain
         docker run \
                 --rm \

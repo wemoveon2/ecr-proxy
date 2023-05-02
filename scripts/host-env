@@ -17,8 +17,10 @@ export HOME="/home/${user}"
         -u "$uid" \
         -d "/home/${user}" \
         -s /bin/bash \
-        "${user}"
+    "${user}"
     setpriv --reuid="$uid" --regid="$gid" --init-groups "$@"
 }
 
 exec "$@"
+
+

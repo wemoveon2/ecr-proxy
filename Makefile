@@ -4,8 +4,11 @@ altarch = $(subst x86_64,amd64,$(subst aarch64,arm64,$1))
 DEFAULT_GOAL := $(or $(DEFAULT_GOAL),toolchain)
 ARCH := $(or $(ARCH),x86_64)
 TARGET := $(or $(TARGET),$(ARCH))
-HOST_ARCH := $(call lc,$(shell uname -m))
+
+normarch = $(subst arm64,aarch64,$(subst amd64,x86_64,$1))
+HOST_ARCH := $(call normarch,$(call lc,$(shell uname -m)))
 HOST_ARCH_ALT := $(call altarch,$(HOST_ARCH))
+
 HOST_OS := $(call lc,$(shell uname -s))
 PLATFORM := $(or $(PLATFORM),linux)
 NAME := $(shell basename $(shell git rev-parse --show-toplevel | tr A-Z a-z ))

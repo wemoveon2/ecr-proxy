@@ -8,8 +8,10 @@ export HOME="/home/${user}"
 
 # If running user is not root, pivot to custom user/group
 [ "$uid" != "0" ] && {
-    getent group "$gid" && groupdel "$gid"
-    getent passwd "$uid" && userdel "$uid"
+    getent group "$gid" \
+        && groupdel "$(awk -v i="$gid" -F: '$3 == i' /etc/group | cut -d: -f1)"
+    getent passwd "$uid" \
+        && userdel "$(awk -v i="$uid" -F: '$3 == i' /etc/passwd | cut -d: -f1)"
     groupadd -g "$gid" "${user}"
     useradd \
         -g "$gid" \

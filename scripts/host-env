@@ -7,7 +7,7 @@ user=${USER:-"build"}
 export HOME="/home/${user}"
 
 # If running user is not root, pivot to custom user/group
-[ "$uid" != "0" ] && {
+if [ "$uid" != "0" ]; then
     getent group "$gid" \
         && groupdel "$(awk -v i="$gid" -F: '$3 == i' /etc/group | cut -d: -f1)"
     getent passwd "$uid" \
@@ -21,8 +21,6 @@ export HOME="/home/${user}"
         -s /bin/bash \
     "${user}"
     setpriv --reuid="$uid" --regid="$gid" --init-groups "$@"
-}
-
-exec "$@"
-
-
+else
+    exec "$@"
+fi

@@ -80,21 +80,6 @@ us as desired.
       ")
     ```
 
-7. Define a release target for your project depending on manifest.txt
-
-    ```
-    .PHONY: release
-    release: $(OUT_DIR)/hello $(OUT_DIR)/manifest.txt
-    	mkdir -p $(RELEASE_DIR)
-    	cp $(OUT_DIR)/hello $(RELEASE_DIR)/hello
-    	cp $(OUT_DIR)/release.env $(RELEASE_DIR)/release.env
-    	cp $(OUT_DIR)/manifest.txt $(RELEASE_DIR)/manifest.txt
-    ```
-
-    Note that manifest.txt is optional, but it makes for an ideal single file
-    to sign if a release will contain more than one artifact.
-
-
 ## Usage ##
 
 ### Build a new release

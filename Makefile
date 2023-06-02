@@ -107,7 +107,7 @@ reproduce: toolchain-clean
 	mkdir -p $(OUT_DIR)
 	cp $(DIST_DIR)/release.env $(OUT_DIR)/release.env
 	$(MAKE) TARGET=$(TARGET) VERSION=$(VERSION)
-	diff -q $(OUT_DIR)/manifest.txt $(DIST_DIR)/manifest.txt \
+	diff -q $(OUT_DIR) $(DIST_DIR) \
 	&& echo "Success: $(OUT_DIR) and $(DIST_DIR) are identical"
 
 .PHONY: $(DIST_DIR)
@@ -174,15 +174,6 @@ $(OUT_DIR)/release.env: | $(OUT_DIR)
 	echo 'GIT_AUTHOR=$(GIT_AUTHOR)'       >> $(OUT_DIR)/release.env
 	echo 'GIT_KEY=$(GIT_KEY)'             >> $(OUT_DIR)/release.env
 	echo 'GIT_TIMESTAMP=$(GIT_TIMESTAMP)' >> $(OUT_DIR)/release.env
-
-$(OUT_DIR)/manifest.txt: $(wildcard $(OUT_DIR)/*)
-	find -L $(OUT_DIR) \
-		-type f \
-		-not -path "$(OUT_DIR)/manifest.txt" \
-		-exec openssl sha256 -r {} \; \
-	| sed -e 's/ \*out\// /g' -e 's/ \.\// /g' \
-	| LC_ALL=C sort -k2 \
-	> $@
 
 check_executables := $(foreach exec,$(executables),\$(if \
 	$(shell which $(exec)),some string,$(error "No $(exec) in PATH")))

@@ -50,8 +50,8 @@ export
 
 docker = docker
 
-include $(CONFIG_DIR)/global.env
-export $(shell sed 's/=.*//' $(CONFIG_DIR)/global.env)
+include $(CONFIG_DIR)/toolchain.env
+export $(shell sed 's/=.*//' $(CONFIG_DIR)/toolchain.env)
 
 ## Use env vars from existing release if present
 ifneq (,$(wildcard $(DIST_DIR)/release.env))
@@ -130,11 +130,22 @@ $(OUT_DIR):
 	mkdir -p $@
 
 $(CACHE_DIR_ROOT)/toolchain.env: \
-	$(CACHE_DIR) \
-	$(SRC_DIR)/toolchain/scripts/environment
-	$(SRC_DIR)/toolchain/scripts/environment > $@
+	$(CACHE_DIR_ROOT)/toolchain.state
+	env > $(CACHE_DIR)/bootstrap.env
+	docker run \
+        --rm \
+        --env UID=$(UID) \
+        --env GID=$(GID) \
+        --env-file $(CACHE_DIR)/bootstrap.env \
+        --platform=linux/$(ARCH) \
+        --volume $(TOOLCHAIN_VOLUME) \
+        --workdir $(TOOLCHAIN_WORKDIR) \
+        $(shell cat cache/toolchain.state 2> /dev/null) \
+        $(SRC_DIR)/toolchain/scripts/environment > $@
+	rm $(CACHE_DIR)/bootstrap.env
 
 $(CACHE_DIR_ROOT)/toolchain.tar: \
+	$(CONFIG_DIR)/toolchain.env \
 	$(SRC_DIR)/toolchain/Dockerfile \
 	$(CONFIG_DIR)/toolchain/package-hashes-$(ARCH).txt \
 	$(CONFIG_DIR)/toolchain/packages-base.list \
@@ -222,7 +233,7 @@ endef
 
 define toolchain
         docker run \
-                --rm \
+        --rm \
 		--tty \
                 $(2) \
                 --env UID=$(UID) \
@@ -232,7 +243,6 @@ define toolchain
                 --cpus $(CPUS) \
                 --volume $(TOOLCHAIN_VOLUME) \
                 --workdir $(TOOLCHAIN_WORKDIR) \
-                --env-file=$(CONFIG_DIR)/global.env \
                 --env-file=$(CACHE_DIR_ROOT)/toolchain.env \
                 $(shell cat cache/toolchain.state 2> /dev/null) \
                 $(SRC_DIR)/toolchain/scripts/host-env bash -c $(1)

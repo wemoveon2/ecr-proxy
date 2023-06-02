@@ -1,6 +1,10 @@
 #!/bin/sh
 
 HOME=/home/build
+CONFIG_DIR=/home/build/config
+
+cat ${CONFIG_DIR}/toolchain.env
+
 cat <<- EOF
 	HOME=${HOME}
 	PATH=${HOME}/${BIN_DIR}:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
@@ -33,3 +37,5 @@ cat <<- EOF
 	BIN_DIR=${HOME}/${BIN_DIR}
 	FETCH_DIR=${HOME}/${FETCH_DIR}
 EOF
+
+envsubst < ${CONFIG_DIR}/global.env

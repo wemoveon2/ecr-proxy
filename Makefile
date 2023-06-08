@@ -45,18 +45,28 @@ BIN_DIR := $(CACHE_DIR_ROOT)/bin
 SRC_DIR := src
 KEY_DIR := keys
 OUT_DIR := out
-
-export
-
 docker = docker
 
 include $(CONFIG_DIR)/toolchain.env
 export $(shell sed 's/=.*//' $(CONFIG_DIR)/toolchain.env)
+export
+
+AUTOBUILD_TOOLCHAIN := true
+ifeq ($(AUTOBUILD_TOOLCHAIN),true)
+ifeq ("$(wildcard $(CACHE_DIR_ROOT)/make.env)","")
+	echo := $(info $(shell echo "Initializing toolchain."))
+	build_env := $(shell $(MAKE) AUTOBUILD_TOOLCHAIN=false toolchain )
+endif
+endif
+ifneq (,$(wildcard $(CACHE_DIR_ROOT)/make.env))
+	include $(CACHE_DIR_ROOT)/make.env
+	export $(shell sed 's/=.*//' $(CACHE_DIR_ROOT)/make.env)
+endif
 
 ## Use env vars from existing release if present
 ifneq (,$(wildcard $(DIST_DIR)/release.env))
-    include $(DIST_DIR)/release.env
-    export
+	include $(DIST_DIR)/release.env
+	export
 endif
 
 executables = $(docker) git git-lfs patch
@@ -68,7 +78,8 @@ toolchain: \
 	$(BIN_DIR) \
 	$(OUT_DIR) \
 	$(CACHE_DIR_ROOT)/toolchain.state \
-	$(CACHE_DIR_ROOT)/toolchain.env
+	$(CACHE_DIR_ROOT)/container.env \
+	$(CACHE_DIR_ROOT)/make.env
 
 # Launch a shell inside the toolchain container
 .PHONY: toolchain-shell
@@ -129,7 +140,7 @@ $(FETCH_DIR):
 $(OUT_DIR):
 	mkdir -p $@
 
-$(CACHE_DIR_ROOT)/toolchain.env: \
+$(CACHE_DIR_ROOT)/make.env $(CACHE_DIR_ROOT)/container.env: \
 	$(CACHE_DIR_ROOT)/toolchain.state
 	env > $(CACHE_DIR)/bootstrap.env
 	docker run \
@@ -141,7 +152,7 @@ $(CACHE_DIR_ROOT)/toolchain.env: \
         --volume $(TOOLCHAIN_VOLUME) \
         --workdir $(TOOLCHAIN_WORKDIR) \
         $(shell cat cache/toolchain.state 2> /dev/null) \
-        $(SRC_DIR)/toolchain/scripts/environment > $@
+        $(SRC_DIR)/toolchain/scripts/environment $(CACHE_DIR_ROOT)
 	rm $(CACHE_DIR)/bootstrap.env
 
 $(CACHE_DIR_ROOT)/toolchain.tar: \
@@ -234,7 +245,7 @@ define toolchain
                 --cpus $(CPUS) \
                 --volume $(TOOLCHAIN_VOLUME) \
                 --workdir $(TOOLCHAIN_WORKDIR) \
-                --env-file=$(CACHE_DIR_ROOT)/toolchain.env \
+                --env-file=$(CACHE_DIR_ROOT)/container.env \
                 $(shell cat cache/toolchain.state 2> /dev/null) \
                 $(SRC_DIR)/toolchain/scripts/host-env bash -c $(1)
 endef

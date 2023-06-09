@@ -35,7 +35,7 @@ VERSION := $(shell TZ=UTC0 git show --quiet --date='format-local:%Y.%m.%d' --for
 DIST_DIR := dist
 CONFIG_DIR := config
 CACHE_DIR_ROOT := cache
-FETCH_DIR := $(CACHE_DIR_ROOT)/fetch
+FETCH_DIR := fetch
 ifeq ($(TARGET),$(ARCH))
 	CACHE_DIR := $(CACHE_DIR_ROOT)/$(TARGET)
 else
@@ -141,6 +141,8 @@ $(OUT_DIR):
 	mkdir -p $@
 
 $(CACHE_DIR_ROOT)/make.env $(CACHE_DIR_ROOT)/container.env: \
+	$(CONFIG_DIR)/global.env \
+	$(CONFIG_DIR)/toolchain.env \
 	$(CACHE_DIR_ROOT)/toolchain.state
 	env > $(CACHE_DIR)/bootstrap.env
 	docker run \
@@ -188,6 +190,22 @@ $(OUT_DIR)/release.env: | $(OUT_DIR)
 
 check_executables := $(foreach exec,$(executables),\$(if \
 	$(shell which $(exec)),some string,$(error "No $(exec) in PATH")))
+
+define sha256_file
+$$(openssl sha256 $(1) | awk '{ print $$2}')
+endef
+
+define fetch_file
+	bash -c " \
+		echo \"Fetching $(1)\" \
+		&& curl \
+			--location $(1) \
+			--output $(CACHE_DIR)/$(notdir $@) \
+		&& [[ "\""$(call sha256_file,$(CACHE_DIR)/$(notdir $@))"\"" == "\""$(2)"\"" ]] \
+		|| { echo 'Error: Hash check failed'; exit 1; } \
+		&& mv $(CACHE_DIR)/$(notdir $@) $@; \
+	"
+endef
 
 define git_clone
 	[ -d $(1) ] || \

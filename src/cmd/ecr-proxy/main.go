@@ -4,11 +4,13 @@ import (
 	"context"
 	"flag"
 	"fmt"
+	"net"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 	"os"
 	"os/signal"
+	"syscall"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -50,7 +52,7 @@ func main() {
 
 	flag.Parse()
 
-	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, os.Kill)
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer cancel()
 
 	if debug {
@@ -104,14 +106,23 @@ func main() {
 		w.WriteHeader(http.StatusOK)
 	})
 
-	if err = http.ListenAndServe(listenAddr, mux); err != nil {
+	l, err := net.Listen("tcp", listenAddr)
+	if err != nil {
+		log.Fatal("failed to listen for HTTP requests", zap.String("addr", listenAddr), zap.Error(err))
+	}
+
+	go func() {
+		<-ctx.Done()
+
+		l.Close() //nolint:errcheck
+	}()
+
+	if err = http.Serve(l, mux); err != nil {
 		log.Fatal("HTTP listener exited", zap.Error(err))
 	}
 }
 
 func addAuthToken(req *http.Request) error {
-	req.Header.Del("X-Forwarded-For")
-
 	ecrEndpoint, err := url.Parse(aws.ToString(authData.ProxyEndpoint))
 	if err != nil {
 		return errors.Wrap(err, "failed to parse AWS ECR proxy endpoint")

@@ -35,10 +35,9 @@
           #!/bin/sh
           pushd $(git rev-parse --show-toplevel)/src
           ${pkgs.go}/bin/go mod tidy
-          ${pkgs.gofumpt}/bin/gofumpt -w ./cmd/*
-          ${gci}/bin/gci write --skip-generated -s standard -s default -s "Prefix(github.com/tkhq)" .
-          ${pkgs.golangci-lint}/bin/golangci-lint run ./...
-          ${pkgs.go}/bin/go build -o ../out/ecr-proxy.linux-x86_64 # hack for local CLI go test
+          ${pkgs.gofumpt}/bin/gofumpt -w ./cmd/ecr-proxy/*
+          ${gci}/bin/gci write --skip-generated -s standard -s default -s "Prefix(github.com/tkhq)" ./cmd/ecr-proxy
+          ${pkgs.golangci-lint}/bin/golangci-lint run ./cmd/ecr-proxy/...
           ${pkgs.go}/bin/go test -v ./...
         '';
       in

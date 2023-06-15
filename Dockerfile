@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.20-bullseye AS builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.20-bullseye@sha256:a3598b93d32819f1759893c532fa186bc61d58f1ced9aa49c2c77fe13383159a AS builder
 
 ARG TARGETOS
 ARG TARGETARCH

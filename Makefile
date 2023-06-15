@@ -144,18 +144,40 @@ $(CACHE_DIR_ROOT)/make.env $(CACHE_DIR_ROOT)/container.env: \
 	$(CONFIG_DIR)/global.env \
 	$(CONFIG_DIR)/toolchain.env \
 	$(CACHE_DIR_ROOT)/toolchain.state
-	env > $(CACHE_DIR)/bootstrap.env
 	docker run \
         --rm \
         --env UID=$(UID) \
         --env GID=$(GID) \
-        --env-file $(CACHE_DIR)/bootstrap.env \
+		--env NAME="$(NAME)" \
+		--env IMAGE="$(IMAGE)" \
+		--env USER="$(USER)" \
+		--env ARCH="$(ARCH)" \
+		--env HOST_ARCH="$(HOST_ARCH)" \
+		--env HOST_ARCH_ALT="$(HOST_ARCH_ALT)" \
+		--env HOST_OS="$(HOST_OS)" \
+		--env PLATFORM="$(PLATFORM)" \
+		--env CPUS="$(CPUS)" \
+		--env TARGET="$(TARGET)" \
+		--env GIT_REF="$(GIT_REF)" \
+		--env GIT_AUTHOR="$(GIT_AUTHOR)" \
+		--env GIT_KEY="$(GIT_KEY)" \
+		--env GIT_TIMESTAMP="$(GIT_TIMESTAMP)" \
+		--env VERSION="$(VERSION)" \
+		--env DIST_DIR="$(DIST_DIR)" \
+		--env FETCH_DIR="$(FETCH_DIR)" \
+		--env KEY_DIR="$(KEY_DIR)" \
+		--env OUT_DIR="$(OUT_DIR)" \
+		--env SRC_DIR="$(SRC_DIR)" \
+		--env CACHE_DIR="$(CACHE_DIR)" \
+		--env CACHE_DIR_ROOT="$(CACHE_DIR_ROOT)" \
+		--env CONFIG_DIR="$(CONFIG_DIR)" \
+		--env TOOLCHAIN_VOLUME="$(TOOLCHAIN_VOLUME)" \
+		--env TOOLCHAIN_WORKDIR="$(TOOLCHAIN_WORKDIR)" \
         --platform=linux/$(ARCH) \
         --volume $(TOOLCHAIN_VOLUME) \
         --workdir $(TOOLCHAIN_WORKDIR) \
         $(shell cat cache/toolchain.state 2> /dev/null) \
         $(SRC_DIR)/toolchain/scripts/environment $(CACHE_DIR_ROOT)
-	rm $(CACHE_DIR)/bootstrap.env
 
 $(CACHE_DIR_ROOT)/toolchain.tar: \
 	$(CONFIG_DIR)/toolchain.env \

@@ -35,7 +35,7 @@ VERSION := $(shell TZ=UTC0 git show --quiet --date='format-local:%Y.%m.%d' --for
 DIST_DIR := dist
 CONFIG_DIR := config
 CACHE_DIR_ROOT := cache
-FETCH_DIR := $(CACHE_DIR_ROOT)/fetch
+FETCH_DIR := fetch
 ifeq ($(TARGET),$(ARCH))
 	CACHE_DIR := $(CACHE_DIR_ROOT)/$(TARGET)
 else
@@ -45,18 +45,28 @@ BIN_DIR := $(CACHE_DIR_ROOT)/bin
 SRC_DIR := src
 KEY_DIR := keys
 OUT_DIR := out
-
-export
-
 docker = docker
 
-include $(CONFIG_DIR)/global.env
-export $(shell sed 's/=.*//' $(CONFIG_DIR)/global.env)
+include $(CONFIG_DIR)/toolchain.env
+export $(shell sed 's/=.*//' $(CONFIG_DIR)/toolchain.env)
+export
+
+AUTOBUILD_TOOLCHAIN := true
+ifeq ($(AUTOBUILD_TOOLCHAIN),true)
+ifeq ("$(wildcard $(CACHE_DIR_ROOT)/make.env)","")
+	echo := $(info $(shell echo "Initializing toolchain."))
+	build_env := $(shell $(MAKE) AUTOBUILD_TOOLCHAIN=false toolchain )
+endif
+endif
+ifneq (,$(wildcard $(CACHE_DIR_ROOT)/make.env))
+	include $(CACHE_DIR_ROOT)/make.env
+	export $(shell sed 's/=.*//' $(CACHE_DIR_ROOT)/make.env)
+endif
 
 ## Use env vars from existing release if present
 ifneq (,$(wildcard $(DIST_DIR)/release.env))
-    include $(DIST_DIR)/release.env
-    export
+	include $(DIST_DIR)/release.env
+	export
 endif
 
 executables = $(docker) git git-lfs patch
@@ -68,7 +78,8 @@ toolchain: \
 	$(BIN_DIR) \
 	$(OUT_DIR) \
 	$(CACHE_DIR_ROOT)/toolchain.state \
-	$(CACHE_DIR_ROOT)/toolchain.env
+	$(CACHE_DIR_ROOT)/container.env \
+	$(CACHE_DIR_ROOT)/make.env
 
 # Launch a shell inside the toolchain container
 .PHONY: toolchain-shell
@@ -129,12 +140,25 @@ $(FETCH_DIR):
 $(OUT_DIR):
 	mkdir -p $@
 
-$(CACHE_DIR_ROOT)/toolchain.env: \
-	$(CACHE_DIR) \
-	$(SRC_DIR)/toolchain/scripts/environment
-	$(SRC_DIR)/toolchain/scripts/environment > $@
+$(CACHE_DIR_ROOT)/make.env $(CACHE_DIR_ROOT)/container.env: \
+	$(CONFIG_DIR)/global.env \
+	$(CONFIG_DIR)/toolchain.env \
+	$(CACHE_DIR_ROOT)/toolchain.state
+	env > $(CACHE_DIR)/bootstrap.env
+	docker run \
+        --rm \
+        --env UID=$(UID) \
+        --env GID=$(GID) \
+        --env-file $(CACHE_DIR)/bootstrap.env \
+        --platform=linux/$(ARCH) \
+        --volume $(TOOLCHAIN_VOLUME) \
+        --workdir $(TOOLCHAIN_WORKDIR) \
+        $(shell cat cache/toolchain.state 2> /dev/null) \
+        $(SRC_DIR)/toolchain/scripts/environment $(CACHE_DIR_ROOT)
+	rm $(CACHE_DIR)/bootstrap.env
 
 $(CACHE_DIR_ROOT)/toolchain.tar: \
+	$(CONFIG_DIR)/toolchain.env \
 	$(SRC_DIR)/toolchain/Dockerfile \
 	$(CONFIG_DIR)/toolchain/package-hashes-$(ARCH).txt \
 	$(CONFIG_DIR)/toolchain/packages-base.list \
@@ -166,6 +190,22 @@ $(OUT_DIR)/release.env: | $(OUT_DIR)
 
 check_executables := $(foreach exec,$(executables),\$(if \
 	$(shell which $(exec)),some string,$(error "No $(exec) in PATH")))
+
+define sha256_file
+$$(openssl sha256 $(1) | awk '{ print $$2}')
+endef
+
+define fetch_file
+	bash -c " \
+		echo \"Fetching $(1)\" \
+		&& curl \
+			--location $(1) \
+			--output $(CACHE_DIR)/$(notdir $@) \
+		&& [[ "\""$(call sha256_file,$(CACHE_DIR)/$(notdir $@))"\"" == "\""$(2)"\"" ]] \
+		|| { echo 'Error: Hash check failed'; exit 1; } \
+		&& mv $(CACHE_DIR)/$(notdir $@) $@; \
+	"
+endef
 
 define git_clone
 	[ -d $(1) ] || \
@@ -213,7 +253,7 @@ endef
 
 define toolchain
         docker run \
-                --rm \
+        --rm \
 		--tty \
                 $(2) \
                 --env UID=$(UID) \
@@ -223,8 +263,7 @@ define toolchain
                 --cpus $(CPUS) \
                 --volume $(TOOLCHAIN_VOLUME) \
                 --workdir $(TOOLCHAIN_WORKDIR) \
-                --env-file=$(CONFIG_DIR)/global.env \
-                --env-file=$(CACHE_DIR_ROOT)/toolchain.env \
+                --env-file=$(CACHE_DIR_ROOT)/container.env \
                 $(shell cat cache/toolchain.state 2> /dev/null) \
                 $(SRC_DIR)/toolchain/scripts/host-env bash -c $(1)
 endef

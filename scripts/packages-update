@@ -26,7 +26,7 @@ apt-get install -y --download-only --reinstall $( \
 apt-get install \
 	-y \
 	--download-only \
-	sudo \
+	sudo gettext \
 	$(cat /config/toolchain/packages-base.list)
 
 ( cd /var/cache/apt/archives \

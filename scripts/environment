@@ -1,7 +1,12 @@
 #!/bin/sh
 
+CACHE_DIR_ROOT=${1?}
 HOME=/home/build
-cat <<- EOF
+CONFIG_DIR=/home/build/config
+
+cat ${CONFIG_DIR}/toolchain.env > ${CACHE_DIR_ROOT}/container.env
+
+cat <<- EOF >> ${CACHE_DIR_ROOT}/container.env
 	HOME=${HOME}
 	PATH=${HOME}/${BIN_DIR}:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 	TZ=UTC
@@ -33,3 +38,7 @@ cat <<- EOF
 	BIN_DIR=${HOME}/${BIN_DIR}
 	FETCH_DIR=${HOME}/${FETCH_DIR}
 EOF
+
+envsubst < ${CONFIG_DIR}/global.env > ${CACHE_DIR_ROOT}/make.env
+
+cat ${CACHE_DIR_ROOT}/make.env >> ${CACHE_DIR_ROOT}/container.env

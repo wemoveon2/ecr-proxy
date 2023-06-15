@@ -62,10 +62,10 @@ us as desired.
 4. Lock a base Debian container image hash
 
     ```
-    echo "DEBIAN_HASH=48b28b354484a7f0e683e340fa0e6e4c4bce3dc3aa0146fc2f78f443fde2c55d" >> config/global.env
+    echo "DEBIAN_HASH=48b28b354484a7f0e683e340fa0e6e4c4bce3dc3aa0146fc2f78f443fde2c55d" >> config/toolchain.env
     ```
 
-5. Generate hashlocks files for all toolchain container dependencies
+5. Generate pinned hashes for all toolchain container dependencies
     ```
     make toolchain-update
     ```
@@ -82,16 +82,16 @@ us as desired.
 
 ## Usage ##
 
-### Build a new release
+### Build a new release with named version
 
 ```
-make VERSION=1.0.0rc1 release
+make VERSION=1.0.0rc1 dist
 ```
 
 ### Reproduce an existing release
 
 ```
-make VERSION=1.0.0rc1 attest
+make reproduce
 ```
 
 ### Add and lock a new container dependency

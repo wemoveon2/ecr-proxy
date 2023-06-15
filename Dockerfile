@@ -1,5 +1,7 @@
 FROM golang:1.20-bullseye AS builder
 
+LABEL org.opencontainers.image.source https://github.com/tkhq/ecr-proxy
+
 ENV CGO_ENABLED=0
 ENV GOPATH=/usr/home/build
 

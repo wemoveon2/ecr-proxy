@@ -1,3 +1,14 @@
+ifeq ("$(wildcard $(PWD)/src/toolchain)","")
+define ERROR
+Toolchain submodule not present. You likely need to run:
+
+git submodule update --init --recursive
+
+and then run make again
+endef
+        $(error $(ERROR))
+endif
+
 include $(PWD)/src/toolchain/Makefile
 
 KEYS := \
@@ -5,10 +16,6 @@ KEYS := \
 	A8864A8303994E3A18ACD1760CAB4418C834B102 \
 	66039AA59D823C8BD68DB062D3EC673DF9843E7B \
 	DE050A451E6FAF94C677B58B9361DEC647A087BD
-
-ifneq ("$(wildcard $(ROOT)/src/toolchain)","")
-	clone := $(shell git submodule update --init --recursive)
-endif
 
 LOCAL_BUILD_DIR := 'build'
 

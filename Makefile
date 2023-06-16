@@ -88,17 +88,22 @@ toolchain-shell: toolchain
 
 .PHONY: toolchain-update
 toolchain-update:
-	rm \
+	rm -rf \
 		$(CONFIG_DIR)/apt-pins-x86_64.list \
 		$(CONFIG_DIR)/apt-sources-x86_64.list \
-		$(CONFIG_DIR)/apt-hashes-x86_64.list
+		$(CONFIG_DIR)/apt-hashes-x86_64.list \
+		$(FETCH_DIR)/apt
 	$(MAKE) $(CONFIG_DIR)/apt-hashes-x86_64.list \
 
+
+$(CONFIG_DIR)/apt-base.list:
+	touch $(CONFIG_DIR)/apt-base.list
+
 # Regenerate toolchain dependency packages to latest versions
-$(CONFIG_DIR)/apt-base.list \
 $(CONFIG_DIR)/apt-pins-x86_64.list \
 $(CONFIG_DIR)/apt-sources-x86_64.list \
-$(CONFIG_DIR)/apt-hashes-x86_64.list:
+$(CONFIG_DIR)/apt-hashes-x86_64.list: \
+$(CONFIG_DIR)/apt-base.list
 	mkdir -p $(FETCH_DIR)/apt \
 	&& docker run \
 		--rm \
@@ -215,7 +220,7 @@ $(CACHE_DIR_ROOT)/toolchain.tar: \
 	$(CONFIG_DIR)/apt-sources-$(ARCH).list \
 	$(CONFIG_DIR)/apt-pins-$(ARCH).list \
 	$(CONFIG_DIR)/apt-hashes-$(ARCH).list \
-	$(FETCH_DIR)/apt/Packages.gz
+	$(FETCH_DIR)/apt/Packages.bz2
 	mkdir -p $(CACHE_DIR)
 	DOCKER_BUILDKIT=1 \
 	docker build \

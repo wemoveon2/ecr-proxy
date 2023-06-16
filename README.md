@@ -55,8 +55,8 @@ us as desired.
 3. Define any build/dev dependencies for toolchain container
 
     ```
-    echo "libfaketime" >> config/toolchain/packages-base.txt
-    echo "build-essential" >> config/toolchain/packages-base.txt
+    echo "libfaketime" >> config/apt-base.list
+    echo "build-essential" >> config/apt-base.list
     ```
 
 4. Lock a base Debian container image hash
@@ -97,7 +97,7 @@ make reproduce
 ### Add and lock a new container dependency
 
 ```
-echo "vim-nox" >> config/toolchain/packages-base.txt
+echo "vim-nox" >> config/apt-base.list
 make toolchain-update
 ```
 

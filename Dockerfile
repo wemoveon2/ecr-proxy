@@ -30,4 +30,6 @@ COPY --from=builder /usr/local/bin/ecr-proxy /usr/local/bin/ecr-proxy
 
 WORKDIR /
 
+USER 65532:65532
+
 ENTRYPOINT ["/usr/local/bin/ecr-proxy"]

@@ -114,7 +114,7 @@ $(CONFIG_DIR)/apt-hashes-x86_64.list:
 		/usr/local/bin/packages-update
 
 # Pin all packages in toolchain container to latest versions
-$(FETCH_DIR)/apt/Packages.gz:
+$(FETCH_DIR)/apt/Packages.bz2:
 	docker run \
 		--rm \
 		--tty \

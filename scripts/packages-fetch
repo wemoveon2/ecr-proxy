@@ -5,7 +5,7 @@ set -e
 
 ARCH=$(uname -m)
 
-cp /config/* /etc/apt/
+cp -R /config/* /etc/apt/
 apt update -o Acquire::Check-Valid-Until=false
 
 until apt-get install \
@@ -31,4 +31,4 @@ mkdir -p /fetch/apt
 
 mv /var/cache/apt/archives/*.deb /fetch/apt/
 apt-get install -y dpkg-dev
-env -C /fetch dpkg-scanpackages apt | gzip > /fetch/apt/Packages.gz
+env -C /fetch dpkg-scanpackages apt | bzip2 > /fetch/apt/Packages.bz2

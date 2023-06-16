@@ -86,10 +86,21 @@ toolchain: \
 toolchain-shell: toolchain
 	$(call toolchain,bash --norc,--interactive)
 
-# Pin all packages in toolchain container to latest versions
 .PHONY: toolchain-update
 toolchain-update:
-	docker run \
+	rm \
+		$(CONFIG_DIR)/apt-pins-x86_64.list \
+		$(CONFIG_DIR)/apt-sources-x86_64.list \
+		$(CONFIG_DIR)/apt-hashes-x86_64.list
+	$(MAKE) $(CONFIG_DIR)/apt-hashes-x86_64.list \
+
+# Regenerate toolchain dependency packages to latest versions
+$(CONFIG_DIR)/apt-base.list \
+$(CONFIG_DIR)/apt-pins-x86_64.list \
+$(CONFIG_DIR)/apt-sources-x86_64.list \
+$(CONFIG_DIR)/apt-hashes-x86_64.list:
+	mkdir -p $(FETCH_DIR)/apt \
+	&& docker run \
 		--rm \
 		--tty \
 		--platform=linux/$(ARCH) \
@@ -101,6 +112,24 @@ toolchain-update:
 		--workdir $(TOOLCHAIN_WORKDIR) \
 		debian@sha256:$(DEBIAN_HASH) \
 		/usr/local/bin/packages-update
+
+# Pin all packages in toolchain container to latest versions
+$(FETCH_DIR)/apt/Packages.gz:
+	docker run \
+		--rm \
+		--tty \
+		--platform=linux/$(ARCH) \
+		--env LOCAL_USER=$(UID):$(GID) \
+		--env FETCH_DIR="$(FETCH_DIR)" \
+		--env PACKAGES_LATEST=$(PACKAGES_LATEST) \
+		--volume $(PWD)/$(CONFIG_DIR):/config \
+		--volume $(PWD)/$(SRC_DIR)/toolchain/scripts:/usr/local/bin \
+		--volume $(PWD)/$(FETCH_DIR):/fetch \
+		--cpus $(CPUS) \
+		--volume $(TOOLCHAIN_VOLUME) \
+		--workdir $(TOOLCHAIN_WORKDIR) \
+		debian@sha256:$(DEBIAN_HASH) \
+		/usr/local/bin/packages-fetch
 
 .PHONY: toolchain-clean
 toolchain-clean:
@@ -182,16 +211,18 @@ $(CACHE_DIR_ROOT)/make.env $(CACHE_DIR_ROOT)/container.env: \
 $(CACHE_DIR_ROOT)/toolchain.tar: \
 	$(CONFIG_DIR)/toolchain.env \
 	$(SRC_DIR)/toolchain/Dockerfile \
-	$(CONFIG_DIR)/toolchain/package-hashes-$(ARCH).txt \
-	$(CONFIG_DIR)/toolchain/packages-base.list \
-	$(CONFIG_DIR)/toolchain/packages-$(ARCH).list \
-	$(CONFIG_DIR)/toolchain/sources.list
+	$(CONFIG_DIR)/apt-base.list \
+	$(CONFIG_DIR)/apt-sources-$(ARCH).list \
+	$(CONFIG_DIR)/apt-pins-$(ARCH).list \
+	$(CONFIG_DIR)/apt-hashes-$(ARCH).list \
+	$(FETCH_DIR)/apt/Packages.gz
 	mkdir -p $(CACHE_DIR)
 	DOCKER_BUILDKIT=1 \
 	docker build \
 		--tag $(IMAGE) \
 		--build-arg DEBIAN_HASH=$(DEBIAN_HASH) \
 		--build-arg CONFIG_DIR=$(CONFIG_DIR) \
+		--build-arg FETCH_DIR=$(PWD)/$(FETCH_DIR) \
 		--build-arg SCRIPTS_DIR=$(SRC_DIR)/toolchain/scripts \
 		--platform=linux/$(ARCH) \
 		-f $(SRC_DIR)/toolchain/Dockerfile \

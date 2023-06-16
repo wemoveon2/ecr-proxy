@@ -3,20 +3,17 @@
 [ -f /.dockerenv ] || { echo "please run in supplied container"; exit 1; }
 set -e
 
-snapshot_url="http://snapshot.debian.org/archive/debian"
-snapshot_date=$(date +"%Y%m%dT000000Z")
 cat <<-EOF > /etc/apt/sources.list
-deb [trusted=yes] ${snapshot_url}/${snapshot_date} bookworm main
-deb [trusted=yes] ${snapshot_url}-security/${snapshot_date} bookworm-security main
-deb [trusted=yes] ${snapshot_url}/${snapshot_date} bookworm-updates main
+deb http://deb.debian.org/debian bookworm main
+deb http://security.debian.org/debian-security bookworm-security main
+deb http://deb.debian.org/debian bookworm-updates main
 EOF
-cp /etc/apt/sources.list /config/toolchain/
 rm /etc/apt/sources.list.d/*
 
 ARCH=$(uname -m)
 
 apt-get update
-apt-get install -y --download-only --reinstall $( \
+apt-get install -y --download-only $( \
 	dpkg-query \
 		-W \
 		-f='${db:Status-Abbrev}\t${binary:Package} - ${binary:Summary}\n' \
@@ -26,20 +23,26 @@ apt-get install -y --download-only --reinstall $( \
 apt-get install \
 	-y \
 	--download-only \
-	sudo gettext \
-	$(cat /config/toolchain/packages-base.list)
+	sudo gettext dpkg-dev \
+	$(cat /config/apt-base.list)
 
 ( cd /var/cache/apt/archives \
 	&& find . -type f \( -iname \*.deb \) -exec sha256sum {} \; \
 	| sed 's/.\///g' \
 	| LC_ALL=C sort
-) > /config/toolchain/package-hashes-${ARCH}.txt
+) > /config/apt-hashes-${ARCH}.list
 
-cp /dev/null /config/toolchain/packages-${ARCH}.list
 for deb in /var/cache/apt/archives/*.deb; do
 	package=$(dpkg-deb -f $deb Package);
 	version=$(dpkg --info ${deb} | grep "^ Version: " | sed 's/^ Version: //g');
-	echo "${package}=${version}" >> /config/toolchain/packages-${ARCH}.list;
+	echo "${package}=${version}" >> /config/apt-pins-${ARCH}.list;
 done
 
-chown -R $LOCAL_USER /config/toolchain
+snapshot_url="http://snapshot.debian.org/archive/debian"
+snapshot_date=$(date +"%Y%m%dT000000Z")
+cat <<-EOF > /config/apt-sources-x86_64.list
+deb [trusted=yes] ${snapshot_url}/${snapshot_date} bookworm main
+deb [trusted=yes] ${snapshot_url}-security/${snapshot_date} bookworm-security main
+deb [trusted=yes] ${snapshot_url}/${snapshot_date} bookworm-updates main
+EOF
+chown -R $LOCAL_USER /config/

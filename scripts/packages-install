@@ -3,34 +3,19 @@ set -e;
 
 ARCH=$(uname -m)
 
-cp /config/toolchain/* /etc/apt/
+cp /config/* /etc/apt/
 
-apt-get update -o Acquire::Check-Valid-Until=false
-apt-get install debian-archive-keyring
+cat <<-EOF > /etc/apt/sources.list
+deb [trusted=yes] file:///fetch apt/
+EOF
+rm /etc/apt/sources.list.d/*
 
-until apt-get install \
-    --download-only \
-    --reinstall \
-    --allow-downgrades \
-    -o Acquire::Check-Valid-Until=false \
-    -y $(cat /etc/apt/packages-${ARCH}.list);
-do
-    echo "apt install failed. Likely throttled. Retrying in 10 mins...";
-    sleep 600;
-done;
-
-(
-	cd /var/cache/apt/archives \
-		&& find . -type f \( -iname \*.deb \) -exec sha256sum {} \; \
-		| sed 's/.\///g' \
-		| LC_ALL=C sort
-) > /etc/apt/package-hashes-${ARCH}-compare.txt
-
-diff /etc/apt/package-hashes-${ARCH}{,-compare}.txt
+apt update -o Acquire::Check-Valid-Until=false
 
 apt-get install \
     --allow-downgrades \
-    -y $(cat /etc/apt/packages-${ARCH}.list)
+    -y $(cat /etc/apt/apt-pins-${ARCH}.list)
+
 rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/* /tmp/* /var/tmp/*;
 
 echo "%sudo ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers

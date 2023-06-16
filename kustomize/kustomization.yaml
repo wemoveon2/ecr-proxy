@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+commonLabels:
+  app.kubernetes.io/name: ecr-proxy
+resources:
+  - resources.yaml
+configMapGenerator:
+  - name: ecr-proxy
+    # overlay should add `account` field
+images:
+  - name: ghcr.io/tkhq/ecr-proxy

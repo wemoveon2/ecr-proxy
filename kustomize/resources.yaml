@@ -1,0 +1,52 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: ecr-proxy
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ecr-proxy
+spec:
+  template:
+    spec:
+      containers:
+        - name: ecr-proxy
+          image: ghcr.io/tkhq/ecr-proxy
+          env:
+            - name: ECR_PROXY_ADDR
+              value: ":8080"
+            - name: ECR_PROXY_ACCOUNT
+              valueFrom:
+                configMapKeyRef:
+                  name: ecr-proxy
+                  key: account
+          args:
+            - -addr=$(ECR_PROXY_ADDR)
+            - -account=$(ECR_PROXY_ACCOUNT)
+            - -region=$(AWS_DEFAULT_REGION) # the AWS_DEFAULT_REGION environment variable is often added by kubernetes controllers e.g. the AWS pod identity hook
+          ports:
+            - name: http
+              containerPort: 8080
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: true
+            runAsNonRoot: true
+      serviceAccountName: ecr-proxy
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ecr-proxy
+spec:
+  ports:
+    - name: http
+      port: 8080
+      targetPort: http

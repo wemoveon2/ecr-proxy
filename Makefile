@@ -199,6 +199,7 @@ $(CACHE_DIR_ROOT)/make.env $(CACHE_DIR_ROOT)/container.env: \
 		--env DIST_DIR="$(DIST_DIR)" \
 		--env FETCH_DIR="$(FETCH_DIR)" \
 		--env KEY_DIR="$(KEY_DIR)" \
+		--env BIN_DIR="$(BIN_DIR)" \
 		--env OUT_DIR="$(OUT_DIR)" \
 		--env SRC_DIR="$(SRC_DIR)" \
 		--env CACHE_DIR="$(CACHE_DIR)" \

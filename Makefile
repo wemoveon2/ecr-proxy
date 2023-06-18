@@ -47,21 +47,10 @@ KEY_DIR := keys
 OUT_DIR := out
 docker = docker
 
-include $(CONFIG_DIR)/toolchain.env
-export $(shell sed 's/=.*//' $(CONFIG_DIR)/toolchain.env)
 export
 
-AUTOBUILD_TOOLCHAIN := true
-ifeq ($(AUTOBUILD_TOOLCHAIN),true)
-ifeq ("$(wildcard $(CACHE_DIR_ROOT)/make.env)","")
-	echo := $(info $(shell echo "Initializing toolchain."))
-	build_env := $(shell $(MAKE) AUTOBUILD_TOOLCHAIN=false toolchain )
-endif
-endif
-ifneq (,$(wildcard $(CACHE_DIR_ROOT)/make.env))
-	include $(CACHE_DIR_ROOT)/make.env
-	export $(shell sed 's/=.*//' $(CACHE_DIR_ROOT)/make.env)
-endif
+include $(CONFIG_DIR)/make.env
+export $(shell sed 's/=.*//' $(CONFIG_DIR)/make.env)
 
 ## Use env vars from existing release if present
 ifneq (,$(wildcard $(DIST_DIR)/release.env))
@@ -78,8 +67,7 @@ toolchain: \
 	$(BIN_DIR) \
 	$(OUT_DIR) \
 	$(CACHE_DIR_ROOT)/toolchain.state \
-	$(CACHE_DIR_ROOT)/container.env \
-	$(CACHE_DIR_ROOT)/make.env
+	$(CACHE_DIR_ROOT)/container.env
 
 # Launch a shell inside the toolchain container
 .PHONY: toolchain-shell
@@ -93,7 +81,7 @@ toolchain-update:
 		$(CONFIG_DIR)/apt-sources-x86_64.list \
 		$(CONFIG_DIR)/apt-hashes-x86_64.list \
 		$(FETCH_DIR)/apt
-	$(MAKE) AUTOBUILD_TOOLCHAIN=false $(CONFIG_DIR)/apt-hashes-x86_64.list
+	$(MAKE) $(CONFIG_DIR)/apt-hashes-x86_64.list
 
 $(CONFIG_DIR)/apt-base.list:
 	touch $(CONFIG_DIR)/apt-base.list
@@ -173,9 +161,8 @@ $(FETCH_DIR):
 $(OUT_DIR):
 	mkdir -p $@
 
-$(CACHE_DIR_ROOT)/make.env $(CACHE_DIR_ROOT)/container.env: \
-	$(CONFIG_DIR)/global.env \
-	$(CONFIG_DIR)/toolchain.env \
+$(CACHE_DIR_ROOT)/container.env: \
+	$(CONFIG_DIR)/make.env \
 	$(CACHE_DIR_ROOT)/toolchain.state
 	docker run \
         --rm \
@@ -211,10 +198,10 @@ $(CACHE_DIR_ROOT)/make.env $(CACHE_DIR_ROOT)/container.env: \
         --volume $(TOOLCHAIN_VOLUME) \
         --workdir $(TOOLCHAIN_WORKDIR) \
         $(shell cat cache/toolchain.state 2> /dev/null) \
-        $(SRC_DIR)/toolchain/scripts/environment $(CACHE_DIR_ROOT)
+        $(SRC_DIR)/toolchain/scripts/environment > $@
 
 $(CACHE_DIR_ROOT)/toolchain.tar: \
-	$(CONFIG_DIR)/toolchain.env \
+	$(CONFIG_DIR)/make.env \
 	$(SRC_DIR)/toolchain/Dockerfile \
 	$(CONFIG_DIR)/apt-base.list \
 	$(CONFIG_DIR)/apt-sources-$(ARCH).list \

@@ -93,8 +93,7 @@ toolchain-update:
 		$(CONFIG_DIR)/apt-sources-x86_64.list \
 		$(CONFIG_DIR)/apt-hashes-x86_64.list \
 		$(FETCH_DIR)/apt
-	$(MAKE) $(CONFIG_DIR)/apt-hashes-x86_64.list \
-
+	$(MAKE) AUTOBUILD_TOOLCHAIN=false $(CONFIG_DIR)/apt-hashes-x86_64.list
 
 $(CONFIG_DIR)/apt-base.list:
 	touch $(CONFIG_DIR)/apt-base.list

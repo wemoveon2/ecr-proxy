@@ -5,7 +5,10 @@ set -e
 
 ARCH=$(uname -m)
 
-cp -R /config/* /etc/apt/
+cp /config/apt-sources-x86_64.list /etc/apt/sources.list
+cp /config/apt-hashes-x86_64.list /etc/apt/
+cp /config/apt-pins-x86_64.list /etc/apt/
+rm /etc/apt/sources.list.d/*
 apt update -o Acquire::Check-Valid-Until=false
 
 until apt-get install \

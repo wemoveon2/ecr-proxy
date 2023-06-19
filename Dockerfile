@@ -1,11 +1,15 @@
 FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.20-bullseye@sha256:a3598b93d32819f1759893c532fa186bc61d58f1ced9aa49c2c77fe13383159a AS builder
 
+ARG SOURCE_DATE_EPOCH
 ARG TARGETOS
 ARG TARGETARCH
 
 ENV GOPATH=/usr/home/build
 ENV GOOS=${TARGETOS}
 ENV GOARCH=${TARGETARCH}
+
+RUN mkdir -p /newroot/etc/ssl/certs \
+  && cp -ra --parents /etc/ssl/certs /newroot/
 
 WORKDIR /usr/home/build/src
 
@@ -16,19 +20,19 @@ COPY ./src .
 RUN GOPROXY=off \
   CGO_ENABLED=0 \
   go build \
-    -installsuffix 'static' \
-    -o /usr/local/bin/ecr-proxy \
+    -o /newroot/usr/local/bin/ecr-proxy \
     ./cmd/ecr-proxy
+
+# Hack to reset timestamps on directories in a multi-platform build
+RUN find /newroot -newermt "@${SOURCE_DATE_EPOCH}" -writable \
+  | xargs touch --date="@${SOURCE_DATE_EPOCH}" --no-dereference
+
 
 FROM scratch
 
 LABEL org.opencontainers.image.source https://github.com/tkhq/ecr-proxy
 
-COPY --from=builder /etc/ssl/certs /etc/ssl/certs
-
-COPY --from=builder /usr/local/bin/ecr-proxy /usr/local/bin/ecr-proxy
-
-WORKDIR /
+COPY --from=builder /newroot /
 
 USER 65532:65532
 

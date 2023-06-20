@@ -30,6 +30,9 @@ var (
 	region     string
 	listenAddr string
 
+	tlsCert string
+	tlsKey  string
+
 	debug bool
 
 	ecrClient *ecr.Client
@@ -44,6 +47,8 @@ func init() {
 	flag.StringVar(&listenAddr, "addr", ":8080", "listen address for HTTP proxy")
 	flag.StringVar(&ecrAccount, "account", "", "aws account for the ECR registry")
 	flag.StringVar(&region, "region", DefaultRegion, "region in which the ECR registry is located")
+	flag.StringVar(&tlsCert, "tls-cert", tlsCert, "certificate file for TLS")
+	flag.StringVar(&tlsKey, "tls-key", tlsKey, "key file for TLS")
 	flag.BoolVar(&debug, "debug", false, "enable debug logging")
 }
 
@@ -117,9 +122,13 @@ func main() {
 		l.Close() //nolint:errcheck
 	}()
 
-	if err = http.Serve(l, mux); err != nil {
-		log.Fatal("HTTP listener exited", zap.Error(err))
+	if tlsKey != "" && tlsCert != "" {
+		err = http.ServeTLS(l, mux, tlsCert, tlsKey)
+	} else {
+		err = http.Serve(l, mux)
 	}
+
+	log.Fatal("HTTP listener exited", zap.Error(err))
 }
 
 func addAuthToken(req *http.Request) error {

@@ -21,13 +21,24 @@ spec:
                 configMapKeyRef:
                   name: ecr-proxy
                   key: account
+            - name: ECR_PROXY_TLS_ADDR
+              value: ":8443"
+            - name: ECR_PROXY_TLS_CERT
+              value: ""
+            - name: ECR_PROXY_TLS_KEY
+              value: ""
           args:
             - -addr=$(ECR_PROXY_ADDR)
             - -account=$(ECR_PROXY_ACCOUNT)
             - -region=$(AWS_DEFAULT_REGION) # the AWS_DEFAULT_REGION environment variable is often added by kubernetes controllers e.g. the AWS pod identity hook
+            - -tls-addr=$(ECR_PROXY_TLS_ADDR)
+            - -tls-cert=$(ECR_PROXY_TLS_CERT)
+            - -tls-key=$(ECR_PROXY_TLS_KEY)
           ports:
             - name: http
               containerPort: 8080
+            - name: https
+              containerPort: 8443
           livenessProbe:
             httpGet:
               path: /health
@@ -50,3 +61,6 @@ spec:
     - name: http
       port: 8080
       targetPort: http
+    - name: https
+      port: 8443
+      targetPort: https

@@ -32,6 +32,7 @@ var (
 
 	tlsCert string
 	tlsKey  string
+	tlsAddr string
 
 	debug bool
 
@@ -47,6 +48,7 @@ func init() {
 	flag.StringVar(&listenAddr, "addr", ":8080", "listen address for HTTP proxy")
 	flag.StringVar(&ecrAccount, "account", "", "aws account for the ECR registry")
 	flag.StringVar(&region, "region", DefaultRegion, "region in which the ECR registry is located")
+	flag.StringVar(&tlsAddr, "tls-addr", ":8443", "listen address for HTTPS proxy")
 	flag.StringVar(&tlsCert, "tls-cert", tlsCert, "certificate file for TLS")
 	flag.StringVar(&tlsKey, "tls-key", tlsKey, "key file for TLS")
 	flag.BoolVar(&debug, "debug", false, "enable debug logging")
@@ -113,7 +115,7 @@ func main() {
 
 	l, err := net.Listen("tcp", listenAddr)
 	if err != nil {
-		log.Fatal("failed to listen for HTTP requests", zap.String("addr", listenAddr), zap.Error(err))
+		log.Fatal("failed to listen on HTTP port", zap.String("addr", listenAddr), zap.Error(err))
 	}
 
 	go func() {
@@ -123,10 +125,25 @@ func main() {
 	}()
 
 	if tlsKey != "" && tlsCert != "" {
-		err = http.ServeTLS(l, mux, tlsCert, tlsKey)
-	} else {
-		err = http.Serve(l, mux)
+		secureListener, err := net.Listen("tcp", tlsAddr)
+		if err != nil {
+			log.Fatal("failed to listen on HTTPS port", zap.String("addr", tlsAddr), zap.Error(err))
+		}
+
+		go func() {
+			<-ctx.Done()
+
+			secureListener.Close() //nolint:errcheck
+		}()
+
+		go func() {
+			if err = http.ServeTLS(secureListener, mux, tlsCert, tlsKey); err != nil {
+				log.Fatal("HTTPS listener exited", zap.Error(err))
+			}
+		}()
 	}
+
+	err = http.Serve(l, mux)
 
 	log.Fatal("HTTP listener exited", zap.Error(err))
 }

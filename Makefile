@@ -252,18 +252,33 @@ define fetch_file
 	"
 endef
 
+define git_archive
+		$(call git_clone,$(CACHE_DIR)/$(notdir $@),$(1),$(2)) \
+		&& tar \
+				-C $(CACHE_DIR)/$(notdir $@) \
+				--sort=name \
+				--mtime='@0' \
+				--owner=0 \
+				--group=0 \
+				--numeric-owner \
+				-cvf - \
+				. \
+			| gzip -n > $@ \
+		&& rm -rf $(CACHE_DIR)/$(notdir $@)
+endef
+
 define git_clone
 	[ -d $(1) ] || \
-		mkdir -p $(FETCH_DIR) && \
-		mkdir $(1).tmp && \
+		mkdir -p $(1).tmp && \
 		git -C $(1).tmp init && \
 		git -C $(1).tmp remote add origin $(2) && \
 		git -C $(1).tmp fetch origin $(3) && \
 		git -C $(1).tmp -c advice.detachedHead=false checkout $(3) && \
+		git -C $(1).tmp submodule update --init && \
 		git -C $(1).tmp rev-parse --verify HEAD | grep -q $(3) || { \
 			echo 'Error: Git ref/branch collision.'; exit 1; \
 		} && \
-		mv $(1).tmp $(1);
+		mv $(1).tmp $(1)
 endef
 
 define apply_patches

@@ -43,7 +43,7 @@ else
 endif
 BIN_DIR := $(CACHE_DIR_ROOT)/bin
 SRC_DIR := src
-KEY_DIR := keys
+KEY_DIR := fetch/keys
 OUT_DIR := out
 docker = docker
 
@@ -292,7 +292,7 @@ define fetch_pgp_key
         	                --recv-keys "$(1)" \
         	        && break; \
         	done; \
-            gpg --export -a $(1) > $(KEY_DIR)/$(1).asc; \
+            gpg --export -a $(1) > $@; \
         ')
 endef
 

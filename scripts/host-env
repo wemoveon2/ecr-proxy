@@ -5,6 +5,8 @@ uid=${UID?}
 gid=${GID?}
 user=${USER:-"build"}
 export HOME="/home/${user}"
+[ ! -z "$PATH_PREFIX" ] && \
+    export PATH="${PATH_PREFIX}:${PATH}"
 
 # If running user is not root, pivot to custom user/group
 if [ "$uid" != "0" ]; then

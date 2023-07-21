@@ -318,6 +318,7 @@ define toolchain
                 $(2) \
                 --env UID=$(UID) \
                 --env GID=$(GID) \
+				--env PATH_PREFIX=$(PATH_PREFIX) \
                 --platform=linux/$(ARCH) \
                 --privileged \
                 --cpus $(CPUS) \

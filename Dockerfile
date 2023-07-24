@@ -13,10 +13,10 @@ RUN mkdir -p /newroot/etc/ssl/certs \
 
 WORKDIR /usr/home/build/src
 
-COPY ./src/go.mod ./src/go.sum .
+COPY ./src/go.mod ./src/go.sum ./
 RUN go mod download
 
-COPY ./src .
+COPY ./src ./
 RUN GOPROXY=off \
   CGO_ENABLED=0 \
   go build \

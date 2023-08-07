@@ -207,7 +207,7 @@ $(CACHE_DIR_ROOT)/toolchain.tar: \
 	$(CONFIG_DIR)/apt-sources-$(ARCH).list \
 	$(CONFIG_DIR)/apt-pins-$(ARCH).list \
 	$(CONFIG_DIR)/apt-hashes-$(ARCH).list \
-	$(FETCH_DIR)/apt/Packages.bz2
+	| $(FETCH_DIR)/apt/Packages.bz2
 	mkdir -p $(CACHE_DIR)
 	DOCKER_BUILDKIT=1 \
 	docker build \

@@ -5,7 +5,7 @@ go 1.19
 require (
 	github.com/aws/aws-sdk-go-v2 v1.20.1
 	github.com/aws/aws-sdk-go-v2/config v1.18.33
-	github.com/aws/aws-sdk-go-v2/service/ecr v1.19.1
+	github.com/aws/aws-sdk-go-v2/service/ecr v1.19.2
 	github.com/pkg/errors v0.9.1
 	go.uber.org/zap v1.25.0
 )

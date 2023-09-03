@@ -5,10 +5,14 @@ set -e
 
 ARCH=$(uname -m)
 
-cp /config/apt-sources-x86_64.list /etc/apt/sources.list
+echo ARCHIVE_SOURCES -> $ARCHIVE_SOURCES
+if [[ "${ARCHIVE_SOURCES}" == "true" ]]; then
+	rm /etc/apt/sources.list.d/*
+	cp /config/apt-sources-x86_64.list /etc/apt/sources.list
+fi
+
 cp /config/apt-hashes-x86_64.list /etc/apt/
 cp /config/apt-pins-x86_64.list /etc/apt/
-rm /etc/apt/sources.list.d/*
 apt update -o Acquire::Check-Valid-Until=false
 
 until apt-get install \

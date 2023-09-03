@@ -3,7 +3,6 @@ altarch = $(subst x86_64,amd64,$(subst aarch64,arm64,$1))
 
 TOOLCHAIN_VOLUME := $(PWD):/home/build
 TOOLCHAIN_WORKDIR := /home/build
-
 DEFAULT_GOAL := $(or $(DEFAULT_GOAL),toolchain)
 ARCH := $(or $(ARCH),x86_64)
 TARGET := $(or $(TARGET),$(ARCH))
@@ -20,6 +19,7 @@ UID := $(shell id -u)
 GID := $(shell id -g)
 USER := $(UID):$(GID)
 CPUS := $(shell docker run debian nproc)
+ARCHIVE_SOURCES := true
 PRESERVE_CACHE := "false"
 GIT_REF := $(shell git log -1 --format=%H)
 GIT_AUTHOR := $(shell git log -1 --format=%an)
@@ -46,6 +46,10 @@ SRC_DIR := src
 KEY_DIR := fetch/keys
 OUT_DIR := out
 docker = docker
+
+PATH_PREFIX := /home/build/$(CACHE_DIR)/bin:/home/build/$(OUT_DIR)/linux/x86_64
+PREFIX := $(HOME)/.local/bin
+XDG_CONFIG_HOME := $(HOME)/.config
 
 export
 
@@ -113,7 +117,7 @@ $(FETCH_DIR)/apt/Packages.bz2: $(CONFIG_DIR)/apt-hashes-x86_64.list
 		--platform=linux/$(ARCH) \
 		--env LOCAL_USER=$(UID):$(GID) \
 		--env FETCH_DIR="$(FETCH_DIR)" \
-		--env PACKAGES_LATEST=$(PACKAGES_LATEST) \
+		--env ARCHIVE_SOURCES=$(ARCHIVE_SOURCES) \
 		--volume $(PWD)/$(CONFIG_DIR):/config \
 		--volume $(PWD)/$(SRC_DIR)/toolchain/scripts:/usr/local/bin \
 		--volume $(PWD)/$(FETCH_DIR):/fetch \

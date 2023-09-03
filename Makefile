@@ -47,8 +47,8 @@ KEY_DIR := fetch/keys
 OUT_DIR := out
 docker = docker
 
-PATH_PREFIX := /home/build/$(CACHE_DIR)/bin:/home/build/$(OUT_DIR)/linux/x86_64
-PREFIX := $(HOME)/.local/bin
+PATH_PREFIX := /home/build/.local/bin:/home/build/$(CACHE_DIR)/bin:/home/build/$(OUT_DIR)/linux/x86_64
+PREFIX := $(HOME)/.local
 XDG_CONFIG_HOME := $(HOME)/.config
 
 export

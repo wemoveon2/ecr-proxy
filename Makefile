@@ -148,6 +148,10 @@ reproduce: toolchain-clean
 
 .PHONY: $(DIST_DIR)
 $(DIST_DIR):
+	git ls-files -o --exclude-standard | grep . \
+		&& { echo "Error: Git has untracked files present"; exit 1; } || :
+	git diff --name-only | grep . \
+		&& { echo "Error: Git has unstaged changes present"; exit 1; } || :
 	rm -rf $@/*
 	[ "$(PRESERVE_CACHE)" = "true" ] || $(MAKE) toolchain-clean
 	$(MAKE) default
@@ -316,9 +320,10 @@ define fetch_pgp_key
 endef
 
 define toolchain
-        docker run \
-        --rm \
-		--tty \
+        $(MAKE) toolchain \
+        && docker run \
+                --rm \
+                --tty \
                 $(2) \
                 --env UID=$(UID) \
                 --env GID=$(GID) \
@@ -329,7 +334,7 @@ define toolchain
                 --volume $(TOOLCHAIN_VOLUME) \
                 --workdir $(TOOLCHAIN_WORKDIR) \
                 --env-file=$(CACHE_DIR_ROOT)/container.env \
-                $(shell cat cache/toolchain.state 2> /dev/null) \
+                $$(cat $(CACHE_DIR_ROOT)/toolchain.state 2> /dev/null) \
                 $(SRC_DIR)/toolchain/scripts/host-env bash -c $(1)
 endef
 

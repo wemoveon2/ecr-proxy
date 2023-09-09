@@ -152,10 +152,10 @@ $(DIST_DIR):
 		&& { echo "Error: Git has untracked files present"; exit 1; } || :
 	git diff --name-only | grep . \
 		&& { echo "Error: Git has unstaged changes present"; exit 1; } || :
-	rm -rf $@/*
+	cp -Rp $@/* $(OUT_DIR)/
 	[ "$(PRESERVE_CACHE)" = "true" ] || $(MAKE) toolchain-clean
 	$(MAKE) default
-	cp -R $(OUT_DIR)/* $@/
+	cp -Rp $(OUT_DIR)/* $@/
 
 $(BIN_DIR):
 	mkdir -p $@

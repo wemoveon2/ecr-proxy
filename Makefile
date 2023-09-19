@@ -57,7 +57,7 @@ include $(CONFIG_DIR)/make.env
 export $(shell sed 's/=.*//' $(CONFIG_DIR)/make.env)
 
 ## Use env vars from existing release if present
-ifneq (,$(wildcard $(DIST_DIR)/release.env))
+ifeq ($(REPRODUCE),"true")
 	include $(DIST_DIR)/release.env
 	export
 endif
@@ -141,8 +141,7 @@ toolchain-clean:
 .PHONY: reproduce
 reproduce: toolchain-clean
 	mkdir -p $(OUT_DIR)
-	cp $(DIST_DIR)/release.env $(OUT_DIR)/release.env
-	$(MAKE) TARGET=$(TARGET) VERSION=$(VERSION)
+	$(MAKE) REPRODUCE="true"
 	diff -q $(OUT_DIR) $(DIST_DIR) \
 	&& echo "Success: $(OUT_DIR) and $(DIST_DIR) are identical"
 
@@ -233,7 +232,7 @@ $(CACHE_DIR_ROOT)/toolchain.state: \
 	docker load -i $(CACHE_DIR_ROOT)/toolchain.tar
 	docker images --no-trunc --quiet $(IMAGE) > $@
 
-$(OUT_DIR)/release.env: | $(OUT_DIR)
+$(OUT_DIR)/release.env: $(shell git ls-files)
 	echo 'VERSION=$(VERSION)'              > $(OUT_DIR)/release.env
 	echo 'GIT_REF=$(GIT_REF)'             >> $(OUT_DIR)/release.env
 	echo 'GIT_AUTHOR=$(GIT_AUTHOR)'       >> $(OUT_DIR)/release.env

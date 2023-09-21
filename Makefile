@@ -164,7 +164,7 @@ toolchain-dist: toolchain-restore-mtime toolchain-dist-cache
 		&& { echo "Error: Git has unstaged changes present"; exit 1; } || :
 	[ "$(PRESERVE_CACHE)" = "true" ] || $(MAKE) toolchain-clean
 	$(MAKE) default
-	cp -Rp $(OUT_DIR)/* $@/
+	cp -Rp $(OUT_DIR)/* $(DIST_DIR)/
 
 $(BIN_DIR):
 	mkdir -p $@

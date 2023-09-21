@@ -57,9 +57,9 @@ include $(CONFIG_DIR)/make.env
 export $(shell sed 's/=.*//' $(CONFIG_DIR)/make.env)
 
 ## Use env vars from existing release if present
-ifeq ($(TOOLCHAIN_REPRODUCE),"true")
-	include $(DIST_DIR)/release.env
-	export
+ifeq ($(TOOLCHAIN_REPRODUCE),true)
+include $(DIST_DIR)/release.env
+export
 endif
 
 executables = $(docker) git git-lfs patch

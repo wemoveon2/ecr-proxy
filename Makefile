@@ -57,7 +57,7 @@ include $(CONFIG_DIR)/make.env
 export $(shell sed 's/=.*//' $(CONFIG_DIR)/make.env)
 
 ## Use env vars from existing release if present
-ifeq ($(REPRODUCE),"true")
+ifeq ($(TOOLCHAIN_REPRODUCE),"true")
 	include $(DIST_DIR)/release.env
 	export
 endif
@@ -86,6 +86,17 @@ toolchain-update:
 		$(CONFIG_DIR)/apt-hashes-x86_64.list \
 		$(FETCH_DIR)/apt
 	$(MAKE) $(CONFIG_DIR)/apt-hashes-x86_64.list
+
+.PHONY: toolchain-restore-mtime
+toolchain-restore-mtime:
+	$(call toolchain," \
+		git restore-mtime \
+		&& echo "Git mtime restored" \
+	")
+
+.PHONY: toolchain-dist-cache
+toolchain-dist-cache:
+	cp -Rp $(DIST_DIR)/* $(OUT_DIR)/
 
 $(CONFIG_DIR)/apt-base.list:
 	touch $(CONFIG_DIR)/apt-base.list
@@ -138,15 +149,15 @@ toolchain-clean:
 	fi
 	docker image rm -f $(IMAGE) || :
 
-.PHONY: reproduce
-reproduce: toolchain-clean
+.PHONY: toolchain-reproduce
+toolchain-reproduce: toolchain-clean
 	mkdir -p $(OUT_DIR)
-	$(MAKE) REPRODUCE="true"
+	$(MAKE) TOOLCHAIN_REPRODUCE="true"
 	diff -q $(OUT_DIR) $(DIST_DIR) \
 	&& echo "Success: $(OUT_DIR) and $(DIST_DIR) are identical"
 
-.PHONY: $(DIST_DIR)
-$(DIST_DIR):
+.PHONY: toolchain-dist
+toolchain-dist: toolchain-restore-mtime toolchain-dist-cache
 	git ls-files -o --exclude-standard | grep . \
 		&& { echo "Error: Git has untracked files present"; exit 1; } || :
 	git diff --name-only | grep . \

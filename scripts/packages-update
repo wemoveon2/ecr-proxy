@@ -23,7 +23,7 @@ apt-get install -y --download-only $( \
 apt-get install \
 	-y \
 	--download-only \
-	sudo gettext dpkg-dev \
+	sudo gettext dpkg-dev git-restore-mtime \
 	$(cat /config/apt-base.list)
 
 ( cd /var/cache/apt/archives \

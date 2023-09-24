@@ -96,6 +96,7 @@ toolchain-restore-mtime:
 
 .PHONY: toolchain-dist-cache
 toolchain-dist-cache:
+	mkdir -p $(OUT_DIR)
 	cp -Rp $(DIST_DIR)/* $(OUT_DIR)/
 
 $(CONFIG_DIR)/apt-base.list:

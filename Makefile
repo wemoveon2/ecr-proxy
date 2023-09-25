@@ -20,7 +20,6 @@ GID := $(shell id -g)
 USER := $(UID):$(GID)
 CPUS := $(shell docker run debian nproc)
 ARCHIVE_SOURCES := true
-PRESERVE_CACHE := "false"
 GIT_REF := $(shell git log -1 --format=%H)
 GIT_AUTHOR := $(shell git log -1 --format=%an)
 GIT_KEY := $(shell git log -1 --format=%GP)
@@ -158,12 +157,11 @@ toolchain-reproduce: toolchain-clean
 	&& echo "Success: $(OUT_DIR) and $(DIST_DIR) are identical"
 
 .PHONY: toolchain-dist
-toolchain-dist: toolchain-restore-mtime toolchain-dist-cache
+toolchain-dist: toolchain-clean toolchain-restore-mtime toolchain-dist-cache
 	git ls-files -o --exclude-standard | grep . \
 		&& { echo "Error: Git has untracked files present"; exit 1; } || :
 	git diff --name-only | grep . \
 		&& { echo "Error: Git has unstaged changes present"; exit 1; } || :
-	[ "$(PRESERVE_CACHE)" = "true" ] || $(MAKE) toolchain-clean
 	$(MAKE) default
 	cp -Rp $(OUT_DIR)/* $(DIST_DIR)/
 

@@ -216,7 +216,7 @@ $(CACHE_DIR_ROOT)/container.env: \
         $(shell cat cache/toolchain.state 2> /dev/null) \
         $(SRC_DIR)/toolchain/scripts/environment > $@
 
-$(CACHE_DIR_ROOT)/toolchain.tar: \
+$(CACHE_DIR_ROOT)/toolchain.tgz: \
 	$(CONFIG_DIR)/make.env \
 	$(SRC_DIR)/toolchain/Dockerfile \
 	$(CONFIG_DIR)/apt-base.list \
@@ -235,11 +235,11 @@ $(CACHE_DIR_ROOT)/toolchain.tar: \
 		--platform=linux/$(ARCH) \
 		-f $(SRC_DIR)/toolchain/Dockerfile \
 		.
-	docker save "$(IMAGE)" -o "$@"
+	docker save "$(IMAGE)" | gzip > "$@"
 
 $(CACHE_DIR_ROOT)/toolchain.state: \
-	$(CACHE_DIR_ROOT)/toolchain.tar
-	docker load -i $(CACHE_DIR_ROOT)/toolchain.tar
+	$(CACHE_DIR_ROOT)/toolchain.tgz
+	docker load -i $(CACHE_DIR_ROOT)/toolchain.tgz
 	docker images --no-trunc --quiet $(IMAGE) > $@
 
 $(OUT_DIR)/release.env: $(shell git ls-files)

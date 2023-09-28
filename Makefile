@@ -157,12 +157,12 @@ toolchain-reproduce: toolchain-clean
 	&& echo "Success: $(OUT_DIR) and $(DIST_DIR) are identical"
 
 .PHONY: toolchain-dist
-toolchain-dist: toolchain-clean toolchain-restore-mtime toolchain-dist-cache
+toolchain-dist:
 	git ls-files -o --exclude-standard | grep . \
 		&& { echo "Error: Git has untracked files present"; exit 1; } || :
 	git diff --name-only | grep . \
 		&& { echo "Error: Git has unstaged changes present"; exit 1; } || :
-	$(MAKE) default
+	$(MAKE) toolchain-clean default toolchain-restore-mtime toolchain-dist-cache
 	cp -Rp $(OUT_DIR)/* $(DIST_DIR)/
 
 $(BIN_DIR):

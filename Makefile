@@ -14,7 +14,6 @@ HOST_ARCH_ALT := $(call altarch,$(HOST_ARCH))
 HOST_OS := $(call lc,$(shell uname -s))
 PLATFORM := $(or $(PLATFORM),linux)
 NAME := $(shell basename $(shell git rev-parse --show-toplevel | tr A-Z a-z ))
-IMAGE := local/$(NAME)
 UID := $(shell id -u)
 GID := $(shell id -g)
 USER := $(UID):$(GID)
@@ -44,6 +43,7 @@ BIN_DIR := $(CACHE_DIR_ROOT)/bin
 SRC_DIR := src
 KEY_DIR := fetch/keys
 OUT_DIR := out
+IMAGE := toolchain/$(shell git ls-files -s $(CONFIG_DIR) | git hash-object --stdin)
 docker = docker
 
 PATH_PREFIX := /home/build/.local/bin:/home/build/$(CACHE_DIR)/bin:/home/build/$(OUT_DIR)/linux/x86_64

@@ -24,6 +24,8 @@ GIT_AUTHOR := $(shell git log -1 --format=%an)
 GIT_KEY := $(shell git log -1 --format=%GP)
 GIT_TIMESTAMP := $(shell git log -1 --format=%cd --date=iso)
 , := ,
+empty :=
+space := $(empty) $(empty)
 ifeq ($(strip $(shell git status --porcelain 2>/dev/null)),)
 	GIT_STATE=clean
 else

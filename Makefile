@@ -162,7 +162,7 @@ toolchain-dist:
 		&& { echo "Error: Git has untracked files present"; exit 1; } || :
 	git diff --name-only | grep . \
 		&& { echo "Error: Git has unstaged changes present"; exit 1; } || :
-	$(MAKE) toolchain-clean default toolchain-restore-mtime toolchain-dist-cache
+	$(MAKE) toolchain-clean toolchain-restore-mtime toolchain-dist-cache default
 	cp -Rp $(OUT_DIR)/* $(DIST_DIR)/
 
 $(BIN_DIR):

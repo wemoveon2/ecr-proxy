@@ -52,6 +52,31 @@ PATH_PREFIX := /home/build/.local/bin:/home/build/$(CACHE_DIR)/bin:/home/build/$
 PREFIX := $(HOME)/.local
 XDG_CONFIG_HOME := $(HOME)/.config
 
+ifneq ($(TOOLCHAIN_PROFILE),false)
+mkc := $(shell mkdir -p $(CACHE_DIR_ROOT))
+ifndef TOOLCHAIN_PROFILE_RUNNING
+rmp := $(shell rm -f $(CACHE_DIR_ROOT)/toolchain-profile.csv)
+TOOLCHAIN_PROFILE_START := 0
+TOOLCHAIN_PROFILE_RUNNING := true
+export TOOLCHAIN_PROFILE_RUNNING TOOLCHAIN_PROFILE_START
+endif
+
+.PHONY: toolchain-profile
+toolchain-profile:
+	@echo Target build times:
+	@column -s, -t < $(CACHE_DIR_ROOT)/toolchain-profile.csv
+endif
+
+define toolchain_profile_start
+	$(eval TOOLCHAIN_PROFILE_START=$(shell date +%s))
+	echo START=$(TOOLCHAIN_PROFILE_START)
+	@printf "%s," "$@" >> $(CACHE_DIR_ROOT)/toolchain-profile.csv
+endef
+
+define toolchain_profile_end
+printf "%s\n" "$$(date -d@$$(($$(date +%s)-$(TOOLCHAIN_PROFILE_START))) -u +%H:%M:%S)" >> $(CACHE_DIR_ROOT)/toolchain-profile.csv
+endef
+
 export
 
 include $(CONFIG_DIR)/make.env

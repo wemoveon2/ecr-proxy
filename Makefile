@@ -17,6 +17,8 @@ NAME := $(shell basename $(shell git rev-parse --show-toplevel | tr A-Z a-z ))
 UID := $(shell id -u)
 GID := $(shell id -g)
 USER := $(UID):$(GID)
+USERNAME := $(shell whoami)
+HOSTNAME := $(shell uname -n)
 CPUS := $(shell docker run debian nproc)
 ARCHIVE_SOURCES := true
 GIT_REF := $(shell git log -1 --format=%H)
@@ -53,16 +55,17 @@ PREFIX := $(HOME)/.local
 XDG_CONFIG_HOME := $(HOME)/.config
 
 ifneq ($(TOOLCHAIN_PROFILE),false)
-mkc := $(shell mkdir -p $(CACHE_DIR_ROOT))
+TOOLCHAIN_PROFILE_DIR := .toolchain/profiles
+mkc := $(shell mkdir -p $(TOOLCHAIN_PROFILE_DIR))
 ifndef TOOLCHAIN_PROFILE_RUNNING
-rmp := $(shell rm -f $(CACHE_DIR_ROOT)/toolchain-profile.csv)
 TOOLCHAIN_PROFILE_INIT := $(shell date +%s)
 TOOLCHAIN_PROFILE_START := 0
 TOOLCHAIN_PROFILE_TOTAL := 0
 TOOLCHAIN_PROFILE_TRACKED := 0
 TOOLCHAIN_PROFILE_UNTRACKED := 0
 TOOLCHAIN_PROFILE_RUNNING := true
-export TOOLCHAIN_PROFILE_RUNNING TOOLCHAIN_PROFILE_START TOOLCHAIN_PROFILE_TOTAL TOOLCHAIN_PROFILE_UNTRACKED TOOLCHAIN_PROFILE_TRACKED
+TOOLCHAIN_PROFILE_FILE := \
+	$(TOOLCHAIN_PROFILE_DIR)/$(HOSTNAME)-$(USERNAME)-$(HOST_OS)-$(HOST_ARCH).$(shell date -u -d @$(TOOLCHAIN_PROFILE_INIT) +%Y%m%dT%H%M%S).csv
 endif
 
 .PHONY: toolchain-profile
@@ -70,31 +73,38 @@ toolchain-profile:
 	$(call toolchain-profile-total)
 	$(call toolchain-profile-tracked)
 	$(call toolchain-profile-untracked)
-	@printf "unprofiled,%s\n" "$(TOOLCHAIN_PROFILE_UNTRACKED)" >> $(CACHE_DIR_ROOT)/toolchain-profile.csv
-	@printf "total,%s" "$(TOOLCHAIN_PROFILE_TOTAL)" >> $(CACHE_DIR_ROOT)/toolchain-profile.csv
+	@printf "unprofiled,%s\n" "$(TOOLCHAIN_PROFILE_UNTRACKED)" \
+		>> $(TOOLCHAIN_PROFILE_FILE)
+	@printf "total,%s\n" "$(TOOLCHAIN_PROFILE_TOTAL)" \
+		>> $(TOOLCHAIN_PROFILE_FILE)
 	@echo Build times:
-	@column -c 80 -s, -t < $(CACHE_DIR_ROOT)/toolchain-profile.csv
+	@bash -c ' \
+		while IFS=, read -r target seconds; do \
+			echo $$target,$$(date -u -d @$$seconds +%T); \
+		done < $(TOOLCHAIN_PROFILE_FILE)' \
+		| column -c 80 -s, -t
 endif
 
 define toolchain-profile-total
-	$(eval TOOLCHAIN_PROFILE_TOTAL=$(shell date -d@$$(($(shell date +%s)-$(TOOLCHAIN_PROFILE_INIT))) -u +%s))
+	$(eval TOOLCHAIN_PROFILE_TOTAL=$(shell expr $(shell date +%s) - $(TOOLCHAIN_PROFILE_INIT)) )
 endef
 
 define toolchain-profile-tracked
-	$(eval TOOLCHAIN_PROFILE_TRACKED=$(shell cat $(CACHE_DIR_ROOT)/toolchain-profile.csv | cut -d ',' -f2 | awk '{ sum += $$1 } END { print sum }'))
+	$(eval TOOLCHAIN_PROFILE_TRACKED=$(shell cat $(TOOLCHAIN_PROFILE_FILE) | cut -d ',' -f2 | awk '{ sum += $$1 } END { print sum }'))
 endef
 
 define toolchain-profile-untracked
-	$(eval TOOLCHAIN_PROFILE_UNTRACKED=$(shell printf $$(($(TOOLCHAIN_PROFILE_TOTAL)-$(TOOLCHAIN_PROFILE_TRACKED))) -u +%s))
+	$(eval TOOLCHAIN_PROFILE_UNTRACKED=$(shell expr $(TOOLCHAIN_PROFILE_TOTAL) - $(TOOLCHAIN_PROFILE_TRACKED)) )
 endef
 
 define toolchain-profile-start
 	$(eval TOOLCHAIN_PROFILE_START=$(shell date +%s))
-	@printf "%s," "$@" >> $(CACHE_DIR_ROOT)/toolchain-profile.csv
+	printf "%s," "$@" >> $(TOOLCHAIN_PROFILE_FILE)
 endef
 
-define toolchain-profile-end
-printf "%s\n" "$$(($$(date +%s)-$(TOOLCHAIN_PROFILE_START)))" >> $(CACHE_DIR_ROOT)/toolchain-profile.csv
+define toolchain-profile-stop
+printf "%s\n" "$$(($$(date +%s)-$(TOOLCHAIN_PROFILE_START)))" \
+	>> $(TOOLCHAIN_PROFILE_FILE)
 endef
 
 export
@@ -135,10 +145,21 @@ toolchain-update:
 
 .PHONY: toolchain-restore-mtime
 toolchain-restore-mtime:
-	$(call toolchain," \
-		git restore-mtime \
-		&& echo "Git mtime restored" \
-	")
+	$(call toolchain-profile-start)
+	bash -c '\
+		for d in $$(git ls-files | xargs -n 1 dirname | uniq); do \
+			mkdir -p "$$d"; \
+		done; \
+		for f in $$(git ls-tree -r -t --full-name --name-only "HEAD"); do \
+			touch -t \
+				$$(git log \
+					--pretty=format:%cd \
+					--date=format:%Y%m%d%H%M.%S \
+					-1 "HEAD" -- "$$f"\
+				) "$$f"; \
+		done; \
+	'
+	$(call toolchain-profile-stop)
 
 .PHONY: toolchain-dist-cache
 toolchain-dist-cache:
@@ -167,7 +188,7 @@ $(CONFIG_DIR)/apt-base.list
 		--workdir $(TOOLCHAIN_WORKDIR) \
 		debian@sha256:$(DEBIAN_HASH) \
 		/usr/local/bin/packages-update
-	$(call toolchain-profile-end)
+	$(call toolchain-profile-stop)
 
 # Pin all packages in toolchain container to latest versions
 $(FETCH_DIR)/apt/Packages.bz2: $(CONFIG_DIR)/apt-hashes-x86_64.list
@@ -187,10 +208,11 @@ $(FETCH_DIR)/apt/Packages.bz2: $(CONFIG_DIR)/apt-hashes-x86_64.list
 		--workdir $(TOOLCHAIN_WORKDIR) \
 		debian@sha256:$(DEBIAN_HASH) \
 		/usr/local/bin/packages-fetch
-	$(call toolchain-profile-end)
+	$(call toolchain-profile-stop)
 
 .PHONY: toolchain-clean
 toolchain-clean:
+	$(call toolchain-profile-start)
 	if [ -d "$(CACHE_DIR_ROOT)" ]; then \
 		chmod -R u+w $(CACHE_DIR_ROOT); \
 		rm -rf $(CACHE_DIR_ROOT); \
@@ -199,6 +221,7 @@ toolchain-clean:
 		rm -rf $(OUT_DIR); \
 	fi
 	docker image rm -f $(IMAGE) || :
+	$(call toolchain-profile-stop)
 
 .PHONY: toolchain-reproduce
 toolchain-reproduce: toolchain-clean
@@ -213,7 +236,7 @@ toolchain-dist:
 		&& { echo "Error: Git has untracked files present"; exit 1; } || :
 	git diff --name-only | grep . \
 		&& { echo "Error: Git has unstaged changes present"; exit 1; } || :
-	$(MAKE) toolchain-clean toolchain-restore-mtime toolchain-dist-cache default
+	$(MAKE) toolchain-restore-mtime toolchain-clean toolchain-dist-cache default
 	cp -Rp $(OUT_DIR)/* $(DIST_DIR)/
 
 $(BIN_DIR):
@@ -288,12 +311,14 @@ $(CACHE_DIR_ROOT)/toolchain.tgz: \
 		-f $(SRC_DIR)/toolchain/Dockerfile \
 		.
 	docker save "$(IMAGE)" | gzip > "$@"
-	$(call toolchain-profile-end)
+	$(call toolchain-profile-stop)
 
 $(CACHE_DIR_ROOT)/toolchain.state: \
 	$(CACHE_DIR_ROOT)/toolchain.tgz
+	$(call toolchain-profile-start)
 	docker load -i $(CACHE_DIR_ROOT)/toolchain.tgz
 	docker images --no-trunc --quiet $(IMAGE) > $@
+	$(call toolchain-profile-stop)
 
 $(OUT_DIR)/release.env: $(shell git ls-files)
 	echo 'VERSION=$(VERSION)'              > $(OUT_DIR)/release.env

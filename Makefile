@@ -151,7 +151,8 @@ toolchain-restore-mtime:
 			mkdir -p "$$d"; \
 		done; \
 		for f in $$(git ls-tree -r -t --full-name --name-only "HEAD"); do \
-			touch -t \
+			( test -f "$$f" || test -d "$$f" ) \
+			&& touch -t \
 				$$(git log \
 					--pretty=format:%cd \
 					--date=format:%Y%m%d%H%M.%S \

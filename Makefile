@@ -56,25 +56,45 @@ ifneq ($(TOOLCHAIN_PROFILE),false)
 mkc := $(shell mkdir -p $(CACHE_DIR_ROOT))
 ifndef TOOLCHAIN_PROFILE_RUNNING
 rmp := $(shell rm -f $(CACHE_DIR_ROOT)/toolchain-profile.csv)
+TOOLCHAIN_PROFILE_INIT := $(shell date +%s)
 TOOLCHAIN_PROFILE_START := 0
+TOOLCHAIN_PROFILE_TOTAL := 0
+TOOLCHAIN_PROFILE_TRACKED := 0
+TOOLCHAIN_PROFILE_UNTRACKED := 0
 TOOLCHAIN_PROFILE_RUNNING := true
-export TOOLCHAIN_PROFILE_RUNNING TOOLCHAIN_PROFILE_START
+export TOOLCHAIN_PROFILE_RUNNING TOOLCHAIN_PROFILE_START TOOLCHAIN_PROFILE_TOTAL TOOLCHAIN_PROFILE_UNTRACKED TOOLCHAIN_PROFILE_TRACKED
 endif
 
 .PHONY: toolchain-profile
 toolchain-profile:
-	@echo Target build times:
-	@column -s, -t < $(CACHE_DIR_ROOT)/toolchain-profile.csv
+	$(call toolchain-profile-total)
+	$(call toolchain-profile-tracked)
+	$(call toolchain-profile-untracked)
+	@printf "unprofiled,%s\n" "$(TOOLCHAIN_PROFILE_UNTRACKED)" >> $(CACHE_DIR_ROOT)/toolchain-profile.csv
+	@printf "total,%s" "$(TOOLCHAIN_PROFILE_TOTAL)" >> $(CACHE_DIR_ROOT)/toolchain-profile.csv
+	@echo Build times:
+	@column -c 80 -s, -t < $(CACHE_DIR_ROOT)/toolchain-profile.csv
 endif
 
-define toolchain_profile_start
+define toolchain-profile-total
+	$(eval TOOLCHAIN_PROFILE_TOTAL=$(shell date -d@$$(($(shell date +%s)-$(TOOLCHAIN_PROFILE_INIT))) -u +%s))
+endef
+
+define toolchain-profile-tracked
+	$(eval TOOLCHAIN_PROFILE_TRACKED=$(shell cat $(CACHE_DIR_ROOT)/toolchain-profile.csv | cut -d ',' -f2 | awk '{ sum += $$1 } END { print sum }'))
+endef
+
+define toolchain-profile-untracked
+	$(eval TOOLCHAIN_PROFILE_UNTRACKED=$(shell printf $$(($(TOOLCHAIN_PROFILE_TOTAL)-$(TOOLCHAIN_PROFILE_TRACKED))) -u +%s))
+endef
+
+define toolchain-profile-start
 	$(eval TOOLCHAIN_PROFILE_START=$(shell date +%s))
-	echo START=$(TOOLCHAIN_PROFILE_START)
 	@printf "%s," "$@" >> $(CACHE_DIR_ROOT)/toolchain-profile.csv
 endef
 
-define toolchain_profile_end
-printf "%s\n" "$$(date -d@$$(($$(date +%s)-$(TOOLCHAIN_PROFILE_START))) -u +%H:%M:%S)" >> $(CACHE_DIR_ROOT)/toolchain-profile.csv
+define toolchain-profile-end
+printf "%s\n" "$$(($$(date +%s)-$(TOOLCHAIN_PROFILE_START)))" >> $(CACHE_DIR_ROOT)/toolchain-profile.csv
 endef
 
 export
@@ -133,6 +153,7 @@ $(CONFIG_DIR)/apt-pins-x86_64.list \
 $(CONFIG_DIR)/apt-sources-x86_64.list \
 $(CONFIG_DIR)/apt-hashes-x86_64.list: \
 $(CONFIG_DIR)/apt-base.list
+	$(call toolchain-profile-start)
 	mkdir -p $(FETCH_DIR)/apt \
 	&& docker run \
 		--rm \
@@ -146,9 +167,11 @@ $(CONFIG_DIR)/apt-base.list
 		--workdir $(TOOLCHAIN_WORKDIR) \
 		debian@sha256:$(DEBIAN_HASH) \
 		/usr/local/bin/packages-update
+	$(call toolchain-profile-end)
 
 # Pin all packages in toolchain container to latest versions
 $(FETCH_DIR)/apt/Packages.bz2: $(CONFIG_DIR)/apt-hashes-x86_64.list
+	$(call toolchain-profile-start)
 	docker run \
 		--rm \
 		--tty \
@@ -164,6 +187,7 @@ $(FETCH_DIR)/apt/Packages.bz2: $(CONFIG_DIR)/apt-hashes-x86_64.list
 		--workdir $(TOOLCHAIN_WORKDIR) \
 		debian@sha256:$(DEBIAN_HASH) \
 		/usr/local/bin/packages-fetch
+	$(call toolchain-profile-end)
 
 .PHONY: toolchain-clean
 toolchain-clean:
@@ -251,6 +275,7 @@ $(CACHE_DIR_ROOT)/toolchain.tgz: \
 	$(CONFIG_DIR)/apt-pins-$(ARCH).list \
 	$(CONFIG_DIR)/apt-hashes-$(ARCH).list \
 	| $(FETCH_DIR)/apt/Packages.bz2
+	$(call toolchain-profile-start)
 	mkdir -p $(CACHE_DIR)
 	DOCKER_BUILDKIT=1 \
 	docker build \
@@ -263,6 +288,7 @@ $(CACHE_DIR_ROOT)/toolchain.tgz: \
 		-f $(SRC_DIR)/toolchain/Dockerfile \
 		.
 	docker save "$(IMAGE)" | gzip > "$@"
+	$(call toolchain-profile-end)
 
 $(CACHE_DIR_ROOT)/toolchain.state: \
 	$(CACHE_DIR_ROOT)/toolchain.tgz
@@ -372,4 +398,3 @@ define toolchain
                 $$(cat $(CACHE_DIR_ROOT)/toolchain.state 2> /dev/null) \
                 $(SRC_DIR)/toolchain/scripts/host-env bash -c $(1)
 endef
-

@@ -73,15 +73,14 @@ endif
 .PHONY: toolchain-profile
 toolchain-profile:
 	$(call toolchain-profile-total)
-	$(call toolchain-profile-tracked)
 	@echo Build times:
 	@bash -c ' \
-		while IFS=, read -r target milliseconds; do \
-			echo $$target,$$(date -u -d @$$(( $$milliseconds / 1000 )) +%T); \
+		while IFS=, read -r target ms_start ms_stop; do \
+			ms_diff=$$(($$ms_stop - $$ms_start)); \
+			echo - $$target,$$(date -u -d @$$(( $$ms_diff / 1000 )) +%T); \
 		done < $(TOOLCHAIN_PROFILE_FILE)' \
 		| column -c 80 -s, -t
-	@echo "Real Total: $$(($(TOOLCHAIN_PROFILE_TOTAL)/1000))"
-	@echo "Tracked Total: $$(($(TOOLCHAIN_PROFILE_TRACKED)/1000))"
+	@echo "Total: $$(date -u -d @$$(( $(TOOLCHAIN_PROFILE_TOTAL) / 1000 )) +%T)";
 endif
 
 define toolchain-profile-total
@@ -97,12 +96,17 @@ define toolchain-profile-untracked
 endef
 
 define toolchain-profile-start
-	$(eval TOOLCHAIN_PROFILE_START_$(shell printf "$@"| openssl sha256 | awk '{ print $$2}')=$$($(shell printf $(call epochms))))
+	printf "%s,$(call epochms),\n" "$@" >> $(TOOLCHAIN_PROFILE_FILE);
 endef
 
 define toolchain-profile-stop
-printf "%s,%s\n" "$@" "$$(($(call epochms)-$(TOOLCHAIN_PROFILE_START_$(shell printf "$@" | openssl sha256 | awk '{ print $$2}'))))" \
-	>> $(TOOLCHAIN_PROFILE_FILE);
+	tmpfile=$$(mktemp -q "$(TOOLCHAIN_PROFILE_DIR)/tmp.XXXXXXXXX") \
+	&& cp $(TOOLCHAIN_PROFILE_FILE) $$tmpfile \
+	&& awk \
+		-v ms="$(call epochms)" \
+		'/^$(@),/ {$$0=$$0ms} 1' \
+		$$tmpfile \
+	> $(TOOLCHAIN_PROFILE_FILE)
 endef
 
 export

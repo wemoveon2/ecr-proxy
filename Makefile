@@ -96,7 +96,7 @@ define toolchain-profile-untracked
 endef
 
 define toolchain-profile-start
-	printf "%s,$(call epochms),\n" "$@" >> $(TOOLCHAIN_PROFILE_FILE);
+	printf "%s,$(call epochms),\n" "$@" >> "$(TOOLCHAIN_PROFILE_FILE)"
 endef
 
 define toolchain-profile-stop
@@ -104,9 +104,10 @@ define toolchain-profile-stop
 	&& cp $(TOOLCHAIN_PROFILE_FILE) $$tmpfile \
 	&& awk \
 		-v ms="$(call epochms)" \
-		'/^$(@),/ {$$0=$$0ms} 1' \
+		-v target="$(@)" \
+		'$$1 ~ "^" target {$$0=$$0ms} 1' \
 		$$tmpfile \
-	> $(TOOLCHAIN_PROFILE_FILE)
+	> "$(TOOLCHAIN_PROFILE_FILE)"
 endef
 
 export

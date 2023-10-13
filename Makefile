@@ -54,39 +54,38 @@ PATH_PREFIX := /home/build/.local/bin:/home/build/$(CACHE_DIR)/bin:/home/build/$
 PREFIX := $(HOME)/.local
 XDG_CONFIG_HOME := $(HOME)/.config
 
+# MacOS users do not have a 'date' command that supports milliseconds
+# This is what we are forced to do. Other ideas welcome
+define epochms
+$$(python3 -c 'from time import time; print(int(round(time() * 1000)))')
+endef
+
 ifneq ($(TOOLCHAIN_PROFILE),false)
 TOOLCHAIN_PROFILE_DIR := .toolchain/profiles
 mkc := $(shell mkdir -p $(TOOLCHAIN_PROFILE_DIR))
 ifndef TOOLCHAIN_PROFILE_RUNNING
-TOOLCHAIN_PROFILE_INIT := $(shell date +%s)
-TOOLCHAIN_PROFILE_START := 0
-TOOLCHAIN_PROFILE_TOTAL := 0
-TOOLCHAIN_PROFILE_TRACKED := 0
-TOOLCHAIN_PROFILE_UNTRACKED := 0
+TOOLCHAIN_PROFILE_INIT := $(shell printf $(call epochms))
 TOOLCHAIN_PROFILE_RUNNING := true
 TOOLCHAIN_PROFILE_FILE := \
-	$(TOOLCHAIN_PROFILE_DIR)/$(HOSTNAME)-$(USERNAME)-$(HOST_OS)-$(HOST_ARCH).$(shell date -u -d @$(TOOLCHAIN_PROFILE_INIT) +%Y%m%dT%H%M%S).csv
+	$(TOOLCHAIN_PROFILE_DIR)/$(HOSTNAME)-$(USERNAME)-$(HOST_OS)-$(HOST_ARCH).$(shell date -u -d @$$(($(TOOLCHAIN_PROFILE_INIT) / 1000)) +%Y%m%dT%H%M%S).csv
 endif
 
 .PHONY: toolchain-profile
 toolchain-profile:
 	$(call toolchain-profile-total)
 	$(call toolchain-profile-tracked)
-	$(call toolchain-profile-untracked)
-	@printf "unprofiled,%s\n" "$(TOOLCHAIN_PROFILE_UNTRACKED)" \
-		>> $(TOOLCHAIN_PROFILE_FILE)
-	@printf "total,%s\n" "$(TOOLCHAIN_PROFILE_TOTAL)" \
-		>> $(TOOLCHAIN_PROFILE_FILE)
 	@echo Build times:
 	@bash -c ' \
-		while IFS=, read -r target seconds; do \
-			echo $$target,$$(date -u -d @$$seconds +%T); \
+		while IFS=, read -r target milliseconds; do \
+			echo $$target,$$(date -u -d @$$(( $$milliseconds / 1000 )) +%T); \
 		done < $(TOOLCHAIN_PROFILE_FILE)' \
 		| column -c 80 -s, -t
+	@echo "Real Total: $$(($(TOOLCHAIN_PROFILE_TOTAL)/1000))"
+	@echo "Tracked Total: $$(($(TOOLCHAIN_PROFILE_TRACKED)/1000))"
 endif
 
 define toolchain-profile-total
-	$(eval TOOLCHAIN_PROFILE_TOTAL=$(shell expr $(shell date +%s) - $(TOOLCHAIN_PROFILE_INIT)) )
+	$(eval TOOLCHAIN_PROFILE_TOTAL=$(shell expr $(call epochms) - $(TOOLCHAIN_PROFILE_INIT)) )
 endef
 
 define toolchain-profile-tracked
@@ -98,13 +97,12 @@ define toolchain-profile-untracked
 endef
 
 define toolchain-profile-start
-	$(eval TOOLCHAIN_PROFILE_START=$(shell date +%s))
-	printf "%s," "$@" >> $(TOOLCHAIN_PROFILE_FILE)
+	$(eval TOOLCHAIN_PROFILE_START_$(shell printf "$@"| openssl sha256 | awk '{ print $$2}')=$$($(shell printf $(call epochms))))
 endef
 
 define toolchain-profile-stop
-printf "%s\n" "$$(($$(date +%s)-$(TOOLCHAIN_PROFILE_START)))" \
-	>> $(TOOLCHAIN_PROFILE_FILE)
+printf "%s,%s\n" "$@" "$$(($(call epochms)-$(TOOLCHAIN_PROFILE_START_$(shell printf "$@" | openssl sha256 | awk '{ print $$2}'))))" \
+	>> $(TOOLCHAIN_PROFILE_FILE);
 endef
 
 export
@@ -150,7 +148,7 @@ toolchain-restore-mtime:
 		for d in $$(git ls-files | xargs -n 1 dirname | uniq); do \
 			mkdir -p "$$d"; \
 		done; \
-		for f in $$(git ls-tree -r -t --full-name --name-only "HEAD"); do \
+		for f in $$((git ls-files --modified; git ls-files) | sort | uniq -u); do \
 			( test -f "$$f" || test -d "$$f" ) \
 			&& touch -t \
 				$$(git log \
@@ -407,7 +405,10 @@ define fetch_pgp_key
 endef
 
 define toolchain
-        $(MAKE) toolchain \
+		( test -f $(CACHE_DIR_ROOT)/toolchain.state || { \
+			echo "Error: toolchain.state not found. Check dependencies!"; \
+			exit 1; \
+		};) \
         && docker run \
                 --rm \
                 --tty \

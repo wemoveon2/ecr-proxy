@@ -1,0 +1,2 @@
+fetch/apt/*.deb filter=lfs diff=lfs merge=lfs -text
+fetch/apt/*.bz2 filter=lfs diff=lfs merge=lfs -text

@@ -23,12 +23,11 @@ LOCAL_BUILD_DIR := 'build'
 .PHONY: default
 default: \
 	toolchain \
-	$(DEFAULT_GOAL) \
 	$(patsubst %,$(KEY_DIR)/%.asc,$(KEYS)) \
 	$(OUT_DIR)/ecr-proxy.linux-x86_64 \
 	$(OUT_DIR)/ecr-proxy.linux-aarch64 \
 	$(OUT_DIR)/release.env \
-	$(OUT_DIR)/manifest.txt
+	toolchain-profile
 
 .PHONY: lint
 lint:

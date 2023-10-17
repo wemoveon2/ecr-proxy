@@ -1,2 +1,4 @@
 .direnv/
-/cache/
+cache/
+out/
+.toolchain

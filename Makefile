@@ -1,14 +1,3 @@
-ifeq ("$(wildcard $(PWD)/src/toolchain)","")
-define ERROR
-Toolchain submodule not present. You likely need to run:
-
-git submodule update --init --recursive
-
-and then run make again
-endef
-        $(error $(ERROR))
-endif
-
 include $(PWD)/src/toolchain/Makefile
 
 KEYS := \

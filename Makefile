@@ -11,6 +11,7 @@ LOCAL_BUILD_DIR := 'build'
 .DEFAULT_GOAL :=
 .PHONY: default
 default: \
+	cache \
 	toolchain \
 	$(patsubst %,$(KEY_DIR)/%.asc,$(KEYS)) \
 	$(OUT_DIR)/ecr-proxy.linux-x86_64 \
@@ -25,6 +26,14 @@ lint:
 		GOPATH=/home/build/$(CACHE_DIR) \
 		env -C $(SRC_DIR) go vet -v ./... \
 	')
+
+.PHONY: cache
+cache:
+ifneq ($(TOOLCHAIN_REPRODUCE),true)
+	git lfs pull --include=cache/toolchain.tgz
+	touch cache/toolchain.tgz
+	$(MAKE) toolchain-restore-mtime
+endif
 
 .PHONY: test
 test: $(OUT_DIR)/ecr-proxy.linux-x86_64

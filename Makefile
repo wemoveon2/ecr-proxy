@@ -77,6 +77,7 @@ $(OUT_DIR)/ecr-proxy.%:
 		env -C $(SRC_DIR)/cmd/ecr-proxy \
 		go build \
 			-trimpath \
+			-ldflags="-s -w -buildid=''" \
 			-o /home/build/$@ . \
 	')
 

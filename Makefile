@@ -57,7 +57,7 @@ XDG_CONFIG_HOME := $(HOME)/.config
 # MacOS users do not have a 'date' command that supports milliseconds
 # This is what we are forced to do. Other ideas welcome
 define epochms
-$$(python3 -c 'from time import time; print(int(round(time() * 1000)))')
+$$(python -c 'from time import time; print(int(round(time() * 1000)))')
 endef
 
 ifneq ($(TOOLCHAIN_PROFILE),false)

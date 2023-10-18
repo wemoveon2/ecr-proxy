@@ -35,6 +35,9 @@ ifneq ($(TOOLCHAIN_REPRODUCE),true)
 	$(MAKE) toolchain-restore-mtime
 endif
 
+.PHONY: dist
+dist: toolchain-dist
+
 .PHONY: reproduce
 reproduce:
 	git lfs pull --include=fetch/apt/*

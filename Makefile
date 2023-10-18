@@ -35,6 +35,11 @@ ifneq ($(TOOLCHAIN_REPRODUCE),true)
 	$(MAKE) toolchain-restore-mtime
 endif
 
+.PHONY: reproduce
+reproduce:
+	git lfs pull --include=fetch/apt/*
+	$(MAKE) toolchain-reproduce toolchain-profile
+
 .PHONY: test
 test: $(OUT_DIR)/ecr-proxy.linux-x86_64
 	$(call toolchain,' \

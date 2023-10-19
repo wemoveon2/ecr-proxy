@@ -1,0 +1,43 @@
+#!/bin/sh
+
+HOME=/home/build
+CONFIG_DIR=/home/build/config
+
+cat ${CONFIG_DIR}/make.env
+
+cat <<- EOF
+	HOME=${HOME}
+	PATH=${HOME}/${BIN_DIR}:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+	TZ=UTC
+	LANG=C.UTF-8
+	DEBIAN_FRONTEND=noninteractive
+	PS1=${NAME}-toolchain
+	GNUPGHOME=${HOME}/${CACHE_DIR}/.gnupg
+	ARCH=${ARCH}
+	TARGET=${ARCH}
+	GIT_REF=${GIT_REF}
+	GIT_AUTHOR=${GIT_AUTHOR}
+	GIT_KEY=${GIT_KEY}
+	GIT_TIMESTAMP=${GIT_TIMESTAMP}
+	VERSION=${VERSION}
+	FAKETIME_FMT=%s
+	SOURCE_DATE_EPOCH=1
+	KBUILD_BUILD_TIMESTAMP=1970-01-01 00:00:00 UTC
+	KCONFIG_NOTIMESTAMP=1
+	KBUILD_BUILD_USER=root
+	KBUILD_BUILD_HOST=${NAME}
+	KBUILD_BUILD_VERSION=1
+	UID=$(id -u)
+	GID=$(id -g)
+	RELEASE_DIR=release/${VERSION}
+	CONFIG_DIR=${HOME}/${CONFIG_DIR}
+	CACHE_DIR=${HOME}/${CACHE_DIR}
+	SRC_DIR=${HOME}/${SRC_DIR}
+	OUT_DIR=${HOME}/${OUT_DIR}
+	BIN_DIR=${HOME}/${BIN_DIR}
+	FETCH_DIR=${HOME}/${FETCH_DIR}
+EOF
+
+if [ -f "${CONFIG_DIR}/container.env" ]; then
+    envsubst < ${CONFIG_DIR}/container.env
+fi

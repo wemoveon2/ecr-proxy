@@ -1,0 +1,41 @@
+#!/bin/bash
+
+[ -f /.dockerenv ] || { echo "please run in supplied container"; exit 1; }
+set -e
+
+ARCH=$(uname -m)
+
+echo ARCHIVE_SOURCES -> $ARCHIVE_SOURCES
+if [[ "${ARCHIVE_SOURCES}" == "true" ]]; then
+	rm /etc/apt/sources.list.d/*
+	cp /config/apt-sources-x86_64.list /etc/apt/sources.list
+fi
+
+cp /config/apt-hashes-x86_64.list /etc/apt/
+cp /config/apt-pins-x86_64.list /etc/apt/
+apt update -o Acquire::Check-Valid-Until=false
+
+until apt-get install \
+    --download-only \
+    --allow-downgrades \
+    -o Acquire::Check-Valid-Until=false \
+    -y $(cat /etc/apt/apt-pins-${ARCH}.list);
+do
+    echo "apt install failed. Likely throttled. Retrying in 10 mins...";
+    sleep 600;
+done;
+
+(
+	cd /var/cache/apt/archives \
+		&& find . -type f \( -iname \*.deb \) -exec sha256sum {} \; \
+		| sed 's/.\///g' \
+		| LC_ALL=C sort
+) > /etc/apt/apt-hashes-${ARCH}-compare.list
+
+diff /etc/apt/apt-hashes-${ARCH}{,-compare}.list
+
+mkdir -p /fetch/apt
+
+mv /var/cache/apt/archives/*.deb /fetch/apt/
+apt-get install -y dpkg-dev
+env -C /fetch dpkg-scanpackages apt | bzip2 > /fetch/apt/Packages.bz2

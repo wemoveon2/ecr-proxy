@@ -1,14 +1,3 @@
-ifeq ("$(wildcard $(PWD)/src/toolchain)","")
-define ERROR
-Toolchain submodule not present. You likely need to run:
-
-git submodule update --init --recursive
-
-and then run make again
-endef
-        $(error $(ERROR))
-endif
-
 include $(PWD)/src/toolchain/Makefile
 
 KEYS := \
@@ -22,13 +11,13 @@ LOCAL_BUILD_DIR := 'build'
 .DEFAULT_GOAL :=
 .PHONY: default
 default: \
+	cache \
 	toolchain \
-	$(DEFAULT_GOAL) \
 	$(patsubst %,$(KEY_DIR)/%.asc,$(KEYS)) \
 	$(OUT_DIR)/ecr-proxy.linux-x86_64 \
 	$(OUT_DIR)/ecr-proxy.linux-aarch64 \
 	$(OUT_DIR)/release.env \
-	$(OUT_DIR)/manifest.txt
+	toolchain-profile
 
 .PHONY: lint
 lint:
@@ -37,6 +26,22 @@ lint:
 		GOPATH=/home/build/$(CACHE_DIR) \
 		env -C $(SRC_DIR) go vet -v ./... \
 	')
+
+.PHONY: cache
+cache:
+ifneq ($(TOOLCHAIN_REPRODUCE),true)
+	git lfs pull --include=cache/toolchain.tgz
+	$(MAKE) toolchain-restore-mtime
+	touch fetch/apt/Packages.bz2 cache/toolchain.tgz
+endif
+
+.PHONY: dist
+dist: toolchain-dist
+
+.PHONY: reproduce
+reproduce:
+	git lfs pull --include=fetch/apt/
+	$(MAKE) toolchain-reproduce toolchain-profile
 
 .PHONY: test
 test: $(OUT_DIR)/ecr-proxy.linux-x86_64
@@ -61,6 +66,7 @@ $(KEY_DIR)/%.asc:
 	$(call fetch_pgp_key,$(basename $(notdir $@)))
 
 $(OUT_DIR)/ecr-proxy.%:
+	$(call toolchain-profile-start)
 	$(call toolchain,' \
 		GOHOSTOS="linux" \
 		GOHOSTARCH="amd64" \
@@ -72,8 +78,10 @@ $(OUT_DIR)/ecr-proxy.%:
 		env -C $(SRC_DIR)/cmd/ecr-proxy \
 		go build \
 			-trimpath \
+			-ldflags="-s -w -buildid=''" \
 			-o /home/build/$@ . \
 	')
+	$(call toolchain-profile-stop)
 
 .PHONY: build-local
 build-local:

@@ -1,0 +1,21 @@
+#!/usr/bin/env bash
+set -e;
+
+ARCH=$(uname -m)
+
+cp -R /config/* /etc/apt/
+
+cat <<-EOF > /etc/apt/sources.list
+deb [trusted=yes] file:///fetch apt/
+EOF
+rm /etc/apt/sources.list.d/*
+
+apt update -o Acquire::Check-Valid-Until=false
+
+apt-get install \
+    --allow-downgrades \
+    -y $(cat /etc/apt/apt-pins-${ARCH}.list)
+
+rm -rf /var/cache/apt/archives/* /var/lib/apt/lists/* /tmp/* /var/tmp/*;
+
+echo "%sudo ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers

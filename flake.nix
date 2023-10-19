@@ -42,14 +42,19 @@
       in
       {
         devShells.default = pkgs.mkShell {
+          shellHook = ''
+            alias sh=${pkgs.busybox}/bin/ash
+          '';
           packages = with pkgs; [
             bashInteractive
+            busybox
             envsubst
             gci
             gofumpt
             golangci-lint
             go
             go-tools
+            python3
             tkbuild
             tklint
           ];

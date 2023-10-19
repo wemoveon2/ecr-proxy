@@ -50,6 +50,7 @@
             golangci-lint
             go
             go-tools
+            python3
             tkbuild
             tklint
           ];

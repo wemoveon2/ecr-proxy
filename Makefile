@@ -31,7 +31,7 @@ lint:
 cache:
 ifneq ($(TOOLCHAIN_REPRODUCE),true)
 	git lfs pull --include=cache/toolchain.tgz
-	touch cache/toolchain.tgz
+	touch fetch/apt/Packages.bz2 cache/toolchain.tgz
 	$(MAKE) toolchain-restore-mtime
 endif
 
@@ -40,7 +40,7 @@ dist: toolchain-dist
 
 .PHONY: reproduce
 reproduce:
-	git lfs pull --include=fetch/apt/*
+	git lfs pull --include=fetch/apt/
 	$(MAKE) toolchain-reproduce toolchain-profile
 
 .PHONY: test

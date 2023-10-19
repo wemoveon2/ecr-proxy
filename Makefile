@@ -66,6 +66,7 @@ $(KEY_DIR)/%.asc:
 	$(call fetch_pgp_key,$(basename $(notdir $@)))
 
 $(OUT_DIR)/ecr-proxy.%:
+	$(call toolchain-profile-start)
 	$(call toolchain,' \
 		GOHOSTOS="linux" \
 		GOHOSTARCH="amd64" \
@@ -80,6 +81,7 @@ $(OUT_DIR)/ecr-proxy.%:
 			-ldflags="-s -w -buildid=''" \
 			-o /home/build/$@ . \
 	')
+	$(call toolchain-profile-stop)
 
 .PHONY: build-local
 build-local:

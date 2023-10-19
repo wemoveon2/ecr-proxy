@@ -42,8 +42,12 @@
       in
       {
         devShells.default = pkgs.mkShell {
+          shellHook = ''
+            alias sh=${pkgs.busybox}/bin/ash
+          '';
           packages = with pkgs; [
             bashInteractive
+            busybox
             envsubst
             gci
             gofumpt

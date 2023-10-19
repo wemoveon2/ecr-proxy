@@ -31,8 +31,8 @@ lint:
 cache:
 ifneq ($(TOOLCHAIN_REPRODUCE),true)
 	git lfs pull --include=cache/toolchain.tgz
-	touch fetch/apt/Packages.bz2 cache/toolchain.tgz
 	$(MAKE) toolchain-restore-mtime
+	touch fetch/apt/Packages.bz2 cache/toolchain.tgz
 endif
 
 .PHONY: dist

@@ -1,4 +1,4 @@
-FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.21-bullseye@sha256:6ac4c35eed9933eb7ae528e9549182bcf421c7f0e39b7337411a54c2f6a8b680 AS builder
+FROM --platform=${BUILDPLATFORM:-linux/amd64} golang:1.22-bullseye@sha256:0c099cf97c6162ceab8c9494c4ce8c2a19a73b852f334ec1876a42d05eb5f90b AS builder
 
 ARG SOURCE_DATE_EPOCH
 ARG TARGETOS

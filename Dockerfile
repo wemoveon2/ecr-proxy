@@ -24,8 +24,8 @@ RUN GOPROXY=off \
     ./cmd/ecr-proxy
 
 # Hack to reset timestamps on directories in a multi-platform build
-RUN find /newroot -newermt "@${SOURCE_DATE_EPOCH}" -writable \
-  | xargs touch --date="@${SOURCE_DATE_EPOCH}" --no-dereference
+RUN find /newroot -newermt "${SOURCE_DATE_EPOCH}" -writable \
+  | xargs touch --date="${SOURCE_DATE_EPOCH}" --no-dereference
 
 
 FROM scratch
